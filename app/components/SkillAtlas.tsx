@@ -68,10 +68,7 @@ const rimFragmentShader = `
   }
 `;
 
-// Adapted from the supplied Web Threads fragment program.  It uses card UVs
-// (rather than the whole canvas pixels) so each individual 3D card owns a
-// complete network-thread field inside its rounded face.
-const webThreadsVertexShader = `
+const surfaceVertexShader = `
   varying vec2 vUv;
   void main() {
     vUv = uv;
@@ -79,81 +76,73 @@ const webThreadsVertexShader = `
   }
 `;
 
-const webThreadsFragmentShader = `
+// Adapted from the supplied Aurora program for the existing Three.js scene.
+// Keeping it as one far-field plane gives every card the same deep environment
+// without creating four extra WebGL canvases.
+const auroraFragmentShader = `
   uniform float uTime;
+  uniform float uAmplitude;
+  uniform float uBlend;
   uniform float uOpacity;
-  uniform float uBrightness;
-  uniform float uMouseStrength;
-  uniform float uMouseActive;
-  uniform vec2 uMouse;
+  uniform vec2 uPointer;
   uniform vec3 uColor1;
   uniform vec3 uColor2;
   uniform vec3 uColor3;
   varying vec2 vUv;
 
-  #define TAU 6.28318530718
-  #define THREAD_COUNT 6
-
-  float glow(float x, float falloff, float strength) {
-    return strength / pow(max(x, 0.0001), falloff);
+  vec3 permute(vec3 x) {
+    return mod(((x * 34.0) + 1.0) * x, 289.0);
   }
 
-  float grain(vec2 point) {
-    return fract(sin(dot(point + uTime, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
+  float snoise(vec2 v) {
+    const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+    vec2 i = floor(v + dot(v, C.yy));
+    vec2 x0 = v - i + dot(i, C.xx);
+    vec2 i1 = x0.x > x0.y ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+    vec4 x12 = x0.xyxy + C.xxzz;
+    x12.xy -= i1;
+    i = mod(i, 289.0);
+    vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+    vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0);
+    m = m * m;
+    m = m * m;
+    vec3 x = 2.0 * fract(p * C.www) - 1.0;
+    vec3 h = abs(x) - 0.5;
+    vec3 ox = floor(x + 0.5);
+    vec3 a0 = x - ox;
+    m *= 1.79284291400159 - 0.85373472095314 * (a0 * a0 + h * h);
+    vec3 g;
+    g.x = a0.x * x0.x + h.x * x0.y;
+    g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+    return 130.0 * dot(m, g);
   }
 
   void main() {
-    vec2 uv = vUv;
-    float pinchX = mix(0.5, uMouse.x, uMouseActive * 0.3);
-    float spreadDx = 0.18 * abs(uv.x - pinchX);
-    float baseTime = uTime * 0.17;
-    float yOffset = uv.y - 0.5;
-    vec3 color = vec3(0.0);
-    float totalGlow = 0.0;
-
-    for (int index = 0; index < THREAD_COUNT; index++) {
-      float i = float(index);
-      float amplitude = spreadDx * (1.0 + i);
-      float phase = (baseTime + i * (TAU / float(THREAD_COUNT))) * sign(pinchX - uv.x);
-      float sdf = abs(yOffset + sin(uv.x * 5.0 + phase) * amplitude) / 1.1;
-      float threadGlow = glow(sdf, 0.6, 0.02);
-      vec3 threadColor = mix(uColor1, uColor2, i / float(THREAD_COUNT - 1));
-      color += threadGlow * threadColor;
-      totalGlow += threadGlow;
-    }
-
-    float core = smoothstep(0.5, 2.2, totalGlow);
-    color = mix(color, uColor3 * totalGlow, core * 0.5);
-    float mouseDistance = dot(uv - uMouse, uv - uMouse);
-    float mouseBloom = uMouseActive * uMouseStrength * exp(-mouseDistance * 6.0) * 0.6;
-    color *= uBrightness + mouseBloom;
-    float alpha = clamp(totalGlow, 0.0, 1.0) * uOpacity;
-    float noise = grain(uv * 211.0) * 0.025;
-    color = max(color + noise, vec3(0.0));
-    gl_FragColor = vec4(color * alpha, alpha);
+    vec2 uv = vUv + uPointer * 0.012;
+    vec3 firstMix = mix(uColor1, uColor2, smoothstep(0.0, 0.58, uv.x));
+    vec3 rampColor = mix(firstMix, uColor3, smoothstep(0.48, 1.0, uv.x));
+    float height = snoise(vec2(uv.x * 2.0 + uTime * 0.1, uTime * 0.25)) * 0.5 * uAmplitude;
+    height = exp(height);
+    float intensity = 0.6 * (uv.y * 2.0 - height + 0.2);
+    float auroraAlpha = smoothstep(0.20 - uBlend * 0.5, 0.20 + uBlend * 0.5, intensity);
+    float alpha = auroraAlpha * uOpacity;
+    gl_FragColor = vec4(intensity * rampColor * alpha, alpha);
   }
 `;
 
-function WebThreadsCardBackground({ cardRef, active, compact }: { cardRef: React.RefObject<THREE.Group | null>; active: boolean; compact: boolean }) {
+function AuroraBackground({ compact }: { compact: boolean }) {
   const material = useRef<THREE.ShaderMaterial>(null);
-  const plane = useMemo(() => new THREE.Plane(), []);
-  const worldPosition = useMemo(() => new THREE.Vector3(), []);
-  const worldPointer = useMemo(() => new THREE.Vector3(), []);
-  const localPointer = useMemo(() => new THREE.Vector3(), []);
-  const worldNormal = useMemo(() => new THREE.Vector3(), []);
-  const quaternion = useMemo(() => new THREE.Quaternion(), []);
   const reducedMotion = useRef(false);
-  const mouseState = useRef({ x: 0.5, y: 0.5, active: 0 });
+  const pointer = useRef(new THREE.Vector2());
   const uniforms = useMemo(() => ({
     uTime: { value: 0 },
-    uOpacity: { value: 0.38 },
-    uBrightness: { value: 0.48 },
-    uMouseStrength: { value: 0.18 },
-    uMouseActive: { value: 0 },
-    uMouse: { value: new THREE.Vector2(0.5, 0.5) },
-    uColor1: { value: new THREE.Color("#1f83c7") },
-    uColor2: { value: new THREE.Color("#8ed8ff") },
-    uColor3: { value: new THREE.Color("#e7f7ff") },
+    uAmplitude: { value: 0.86 },
+    uBlend: { value: 0.58 },
+    uOpacity: { value: compact ? 0.3 : 0.46 },
+    uPointer: { value: new THREE.Vector2() },
+    uColor1: { value: new THREE.Color("#073e67") },
+    uColor2: { value: new THREE.Color("#20a5dc") },
+    uColor3: { value: new THREE.Color("#d9f7ff") },
   }), []);
 
   useEffect(() => {
@@ -165,39 +154,79 @@ function WebThreadsCardBackground({ cardRef, active, compact }: { cardRef: React
   }, []);
 
   useFrame((state, delta) => {
-    const card = cardRef.current;
     const shader = material.current;
-    if (!card || !shader) return;
-
-    card.getWorldPosition(worldPosition);
-    card.getWorldQuaternion(quaternion);
-    worldNormal.set(0, 0, 1).applyQuaternion(quaternion);
-    plane.setFromNormalAndCoplanarPoint(worldNormal, worldPosition);
-    const hit = state.raycaster.ray.intersectPlane(plane, worldPointer);
-    const pointer = mouseState.current;
-    let targetActive = 0;
-
-    if (hit) {
-      localPointer.copy(worldPointer);
-      card.worldToLocal(localPointer);
-      const inside = Math.abs(localPointer.x) <= 1.01 && Math.abs(localPointer.y) <= 1.43;
-      if (inside && !compact) {
-        pointer.x = THREE.MathUtils.clamp((localPointer.x + 1.01) / 2.02, 0, 1);
-        pointer.y = THREE.MathUtils.clamp((localPointer.y + 1.43) / 2.86, 0, 1);
-        targetActive = 1;
-      }
-    }
-
-    pointer.active = THREE.MathUtils.damp(pointer.active, targetActive, 6, delta);
-    shader.uniforms.uTime.value = reducedMotion.current ? 0 : state.clock.getElapsedTime();
-    shader.uniforms.uMouse.value.set(pointer.x, pointer.y);
-    shader.uniforms.uMouseActive.value = pointer.active;
-    shader.uniforms.uOpacity.value = THREE.MathUtils.damp(shader.uniforms.uOpacity.value, active ? 0.66 : 0.34, 5, delta);
-    shader.uniforms.uBrightness.value = THREE.MathUtils.damp(shader.uniforms.uBrightness.value, active ? 0.76 : 0.46, 5, delta);
+    if (!shader) return;
+    pointer.current.x = THREE.MathUtils.damp(pointer.current.x, state.pointer.x, 1.2, delta);
+    pointer.current.y = THREE.MathUtils.damp(pointer.current.y, state.pointer.y, 1.2, delta);
+    shader.uniforms.uPointer.value.copy(pointer.current);
+    shader.uniforms.uTime.value = reducedMotion.current ? 0 : state.clock.getElapsedTime() * 0.72;
+    shader.uniforms.uOpacity.value = THREE.MathUtils.damp(shader.uniforms.uOpacity.value, compact ? 0.28 : 0.44, 2, delta);
   });
 
-  return <RoundedBox args={[2.02, 2.86, 0.006]} position={[0, 0, 0.093]} radius={0.11} smoothness={5} renderOrder={1}>
-    <shaderMaterial ref={material} vertexShader={webThreadsVertexShader} fragmentShader={webThreadsFragmentShader} uniforms={uniforms} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
+  return <group>
+    <mesh position={[0, 0, -8.3]} renderOrder={-2}>
+      <planeGeometry args={[24, 15]} />
+      <shaderMaterial ref={material} vertexShader={surfaceVertexShader} fragmentShader={auroraFragmentShader} uniforms={uniforms} transparent depthWrite={false} blending={THREE.NormalBlending} />
+    </mesh>
+    <mesh position={[0, 0, -8.18]} renderOrder={-1}>
+      <planeGeometry args={[24, 15]} />
+      <meshBasicMaterial color="#02070e" transparent opacity={0.36} depthWrite={false} />
+    </mesh>
+  </group>;
+}
+
+const selectionReflectionFragmentShader = `
+  uniform float uProgress;
+  varying vec2 vUv;
+
+  void main() {
+    if (uProgress < 0.0) discard;
+    float diagonal = vUv.x + (1.0 - vUv.y) * 0.32;
+    float sweepCenter = mix(-0.34, 1.48, uProgress);
+    float band = 1.0 - smoothstep(0.0, 0.22, abs(diagonal - sweepCenter));
+    float fade = sin(uProgress * 3.14159265);
+    float alpha = band * fade * 0.09;
+    gl_FragColor = vec4(vec3(0.82, 0.95, 1.0) * alpha, alpha);
+  }
+`;
+
+function SelectionReflection({ active }: { active: boolean }) {
+  const material = useRef<THREE.ShaderMaterial>(null);
+  const state = useRef({ initialized: false, wasActive: active, startedAt: -1 });
+  const reducedMotion = useRef(false);
+  const uniforms = useMemo(() => ({ uProgress: { value: -1 } }), []);
+
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => { reducedMotion.current = query.matches; };
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  useFrame((frame) => {
+    const shader = material.current;
+    if (!shader) return;
+    const pulse = state.current;
+    if (!pulse.initialized) {
+      pulse.initialized = true;
+      pulse.wasActive = active;
+    } else if (active && !pulse.wasActive && !reducedMotion.current) {
+      pulse.startedAt = frame.clock.getElapsedTime();
+    }
+    pulse.wasActive = active;
+
+    if (pulse.startedAt < 0 || reducedMotion.current) {
+      shader.uniforms.uProgress.value = -1;
+      return;
+    }
+    const progress = (frame.clock.getElapsedTime() - pulse.startedAt) / 0.72;
+    shader.uniforms.uProgress.value = progress < 1 ? progress : -1;
+    if (progress >= 1) pulse.startedAt = -1;
+  });
+
+  return <RoundedBox args={[2.02, 2.86, 0.004]} position={[0, 0, 0.097]} radius={0.11} smoothness={5} renderOrder={2}>
+    <shaderMaterial ref={material} vertexShader={surfaceVertexShader} fragmentShader={selectionReflectionFragmentShader} uniforms={uniforms} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
   </RoundedBox>;
 }
 
@@ -338,11 +367,11 @@ function Card({ skill, offset, active, onOpen, onHover, revealed, revealDelay, c
   return (
     <group ref={group} onPointerOver={(event) => { event.stopPropagation(); onHover(); }} onClick={(event) => { event.stopPropagation(); if (active) onOpen(); else onHover(); }}>
       <RoundedBox args={[2.18, 3.02, 0.16]} radius={0.13} smoothness={5} castShadow receiveShadow>
-        <meshPhysicalMaterial color={active ? "#123a67" : "#071a30"} roughness={0.24} metalness={0.38} clearcoat={0.95} clearcoatRoughness={0.1} transmission={0.035} transparent opacity={0.94} />
+        <meshPhysicalMaterial color={active ? "#06080c" : "#030508"} roughness={0.3} metalness={0.34} clearcoat={0.95} clearcoatRoughness={0.16} transmission={0.1} transparent opacity={0.88} />
       </RoundedBox>
       <SpecularRim cardRef={group} active={active} />
-      <mesh position={[0, 0, 0.091]}><planeGeometry args={[2.02, 2.85]} /><meshBasicMaterial color={active ? "#0c315a" : "#06172b"} transparent opacity={0.84} /></mesh>
-      <WebThreadsCardBackground cardRef={group} active={active} compact={compact} />
+      <mesh position={[0, 0, 0.091]}><planeGeometry args={[2.02, 2.85]} /><meshBasicMaterial color={active ? "#02060b" : "#010204"} transparent opacity={0.76} /></mesh>
+      <SelectionReflection active={active} />
       <mesh position={[0, 0.92, 0.097]}><planeGeometry args={[1.82, 0.01]} /><meshBasicMaterial color="#93d8ff" transparent opacity={active ? 0.86 : 0.32} /></mesh>
       <Text position={[-0.81, 1.19, 0.1]} anchorX="left" fontSize={0.105} letterSpacing={0.12} color="#8ed8ff">{skill.number}</Text>
       <Text position={[0.81, 1.19, 0.1]} anchorX="right" fontSize={0.075} letterSpacing={0.08} color="#a5dffb">{skill.status}</Text>
@@ -370,8 +399,8 @@ function Scene({ skills, activeIndex, onSelect, onHover, onOpen, revealed, compa
 
   return (
     <>
-      <color attach="background" args={["#061222"]} />
-      <fog attach="fog" args={["#061222", 8, 16]} />
+      <fog attach="fog" args={["#03070d", 8, 16]} />
+      <AuroraBackground compact={compact} />
       <ambientLight intensity={1.15} color="#9fdcff" />
       <directionalLight position={[-4, 5, 5]} intensity={2.2} color="#d6f2ff" castShadow />
       <pointLight position={[2.5, -1, 3]} intensity={11} distance={9} color="#2384dc" />
@@ -442,8 +471,8 @@ export default function SkillAtlas({ skills, notes, onSave, onOpen, revealed }: 
 
   return (
     <div className="mt-10">
-      <div ref={shell} onMouseMove={compact ? undefined : moveEnvironment} onMouseLeave={compact ? undefined : resetEnvironment} style={{ "--parallax-x": "0px", "--parallax-y": "0px" } as CSSProperties} className="skill-carousel-shell relative overflow-hidden rounded-[1.5rem] border border-sky-100/20 bg-[#061222] sm:rounded-[2rem]">
-        <Canvas shadows={!compact} dpr={compact ? [1, 1.2] : [1, 1.8]} camera={{ position: [0, 0, compact ? 9.4 : 8.5], fov: compact ? 42 : 38 }} style={{ height: compact ? "400px" : "clamp(430px, 52vw, 520px)" }} className="w-full cursor-grab active:cursor-grabbing">
+      <div ref={shell} onMouseMove={compact ? undefined : moveEnvironment} onMouseLeave={compact ? undefined : resetEnvironment} style={{ "--parallax-x": "0px", "--parallax-y": "0px" } as CSSProperties} className="skill-carousel-shell relative overflow-hidden rounded-[1.5rem] border border-sky-100/20 bg-transparent sm:rounded-[2rem]">
+        <Canvas gl={{ alpha: true, antialias: !compact, powerPreference: "high-performance" }} shadows={!compact} dpr={compact ? [1, 1.2] : [1, 1.8]} camera={{ position: [0, 0, compact ? 9.4 : 8.5], fov: compact ? 42 : 38 }} style={{ height: compact ? "400px" : "clamp(430px, 52vw, 520px)", willChange: "transform" }} className="w-full cursor-grab active:cursor-grabbing">
           <Scene skills={skills} activeIndex={activeIndex} onSelect={setActiveIndex} onHover={activateAfterHover} onOpen={onOpen} revealed={revealed} compact={compact} />
         </Canvas>
         <div className="skill-carousel-hud pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between p-4 text-[8px] tracking-[.12em] text-sky-100/65 sm:p-5 sm:text-[10px] sm:tracking-[.16em]"><span className="flex items-center gap-1.5 sm:gap-2"><MousePointer2 size={12} /> {compact ? "TAP TO SELECT" : "MOVE TO EXPLORE DEPTH"}</span><span>REAL 3D / Z-AXIS</span></div>
