@@ -8,14 +8,15 @@ export const metadata: Metadata = {
   description: "记录一个非程序员借助 AI 从恐惧到行动、完成生产力跃迁的真实过程。",
 };
 
-const highlight = "font-medium text-rose-200 underline decoration-amber-300/80 decoration-2 underline-offset-4 drop-shadow-[0_0_12px_rgba(251,191,36,.34)]";
-
-const stages = [
-  ["01", "认知觉醒", "拉响警报"],
-  ["02", "0代码实战", "建站 / 小程序"],
-  ["03", "持续进化", "拥抱 AI"],
-];
+const highlight = "font-medium text-sky-200 underline decoration-sky-300/80 decoration-2 underline-offset-4 drop-shadow-[0_0_12px_rgba(125,211,252,.34)]";
 
 export default function AwakeningPage() {
-  return <ArticleLayout eyebrow="[ 03 / AWAKENING ]" title="非程序员的AI觉醒日志" lead="从恐惧到行动，记录一个普通人借助 AI 完成生产力跃迁的真实过程。" visualLabel="AWAKENING / FROM FEAR TO ACTION" visualTheme="awakening" visual={<AwakeningSignal />} showTopBack={false} ending={<AwakeningQuote />}><p className="mb-10 text-xl leading-[1.85] text-sky-50/90">时代的巨浪打过来时，连一声招呼都不会打。作为一个非程序员，当AGI真实降临时，我最大的感受不是兴奋，而是恐惧——<span className={highlight}>害怕被时代抛弃</span>，害怕自己成为那个被淘汰的旁观者。于是，我给自己拉响了最高级别的警报：必须立刻改变。</p><p className="mb-10">我停止了观望，开始行动。从一知半解到用AI搭建出这个网站、跑通小程序，我没有写一行代码，也没有耗费太久的时间。但这短短的时间里，我完成了一次不可思议的跃迁。我突然明白，技术的壁垒正在坍塌，AI才是普通人撬动世界的新杠杆。</p><section className="mb-10 border-y border-amber-100/15 py-8"><p className="text-[10px] tracking-[.2em] text-amber-200">RAPID EVOLUTION / TIMELINE</p><ol className="mt-7 grid gap-5 md:grid-cols-3">{stages.map(([number, title, detail]) => <li key={number} className="relative border-l border-amber-200/35 pl-5"><span className="text-[10px] tracking-[.14em] text-amber-200">{number}</span><h2 className="mt-3 text-xl font-medium text-sky-50">{title}</h2><p className="mt-2 text-sm text-sky-50/55">{detail}</p></li>)}</ol></section><p className="mb-10">现在，我不再焦虑。因为行动，就是治愈恐惧的唯一解药。</p></ArticleLayout>;
+  return <ArticleLayout eyebrow="[ 03 / AWAKENING ]" title="非程序员的AI觉醒日志" lead="从恐惧到行动，记录一个普通人借助 AI 完成生产力跃迁的真实过程。" visualLabel="AWAKENING / FROM FEAR TO ACTION" visualTheme="awakening" visual={<AwakeningSignal />} showTopBack={false} ending={<AwakeningQuote />}>
+    <p className="mb-10 text-xl leading-[1.85] text-sky-50/90">从前段时间接触到一些 AI 发展的信息，我就感觉在现在这个时代，AI 是发展的一个主要趋势。未来企业会逐渐转型，向智能化靠拢，但是普通人该怎么办？作为没有任何编程基础的我该怎么办？</p>
+    <p className="mb-10">突然就感觉无从下手，根本不知道从哪一步开始。于是我就开始了学习，选择从抖音开始，一步一步知道了一些基本专业名词的含义：<span className={highlight}>Skill 是什么、Codex 是什么、Agent 是什么</span>……</p>
+    <p className="mb-10">包括怎么去搭建网络环境，调用 Skill 和 GitHub 开源的一些东西。在干了一段时间后，竟然不知不觉、神奇地搭建好了第一个个人站。</p>
+    <blockquote className="mb-10 border-l-2 border-sky-300/75 bg-sky-200/[.05] px-6 py-5 text-xl font-medium leading-relaxed text-sky-50/90">全程没跑一行代码。</blockquote>
+    <p className="mb-10">发布之后我感觉非常开心，同时也持一种悲观态度：以前这活应该可能干一周，现在几个小时、一天就能完成。悲观是真切体验到了之前所说的 AI 的恐怖之处。</p>
+    <p className="mb-10">虽然可能其实搭建这个网站对于一些大佬来说非常简单，后续我会在网站上分享一些使用 Skill，以及一些新手使用 Codex 或者 Claude Code 中出现的一些问题。</p>
+  </ArticleLayout>;
 }
