@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Max — an evolving record of AI skills, systems, and experiments." />
+    <title>MAX / AI BUILD LOG</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+    <div class="cursor-glow" aria-hidden="true"></div>
+    <header class="nav shell">
+      <a class="brand" href="#top">MAX<span>®</span></a>
+      <nav aria-label="Main navigation">
+        <a href="#skills">Skills</a>
+        <a href="#log">Build log</a>
+        <a href="#projects">Projects</a>
+        <a href="#about">About</a>
+      </nav>
+      <span class="nav-status"><i></i> BUILDING IN PUBLIC</span>
+    </header>
+
+    <main id="top">
+      <section class="hero shell">
+        <p class="eyebrow">[ 01 — PERSONAL KNOWLEDGE SYSTEM ]</p>
+        <div class="hero-grid">
+          <div class="hero-title-block">
+            <h1 class="hero-title text-7xl font-extrabold leading-tight tracking-tight">重塑未来</h1>
+            <p class="hero-subtitle typewriter-copy text-sm uppercase" data-typewriter="LEARNING LOG & AI / EMBRACE THE FUTURE">LEARNING LOG & AI / EMBRACE THE FUTURE</p>
+          </div>
+          <div class="hero-copy">
+            <p class="text-lg text-gray-400 max-w-2xl">记录我在 AI 世界里的每一次学习、构建与思考。把好奇心变成系统，把想法变成真正可以使用的作品。</p>
+            <div class="hero-actions">
+              <a class="glow-button hero-primary" href="#skills">探索学习地图 <span>↘</span></a>
+              <a class="outline-button hero-secondary" href="#projects">查看我的项目 <span>↗</span></a>
+            </div>
+          </div>
+        </div>
+        <div class="hero-foot">
+          <span>MAX / AI BUILD LOG</span><span>SHANGHAI · 2026</span><span class="scroll">SCROLL TO EXPLORE ↓</span>
+        </div>
+      </section>
+
+      <section class="marquee" aria-label="Topics">
+        <div>AI WORKFLOWS <b>✳</b> CREATIVE CODING <b>✳</b> AGENT SYSTEMS <b>✳</b> PRODUCT THINKING <b>✳</b> AI WORKFLOWS <b>✳</b> CREATIVE CODING <b>✳</b></div>
+      </section>
+
+      <section id="skills" class="shell section skills">
+        <div class="section-head"><p class="eyebrow">[ 02 — TOOLKIT ]</p><p>Selected capabilities<br />currently in motion.</p></div>
+        <div class="skill-list">
+          <article class="skill-card" data-skill-id="prompt-systems"><button class="skill-trigger" type="button" aria-expanded="false"><span>01</span><h2>Prompt<br />Systems</h2><p>把模糊的目标转化为可复用、可测试的 AI 工作流。</p><b>ACTIVE <i>+</i></b></button><div class="skill-note hidden"><div class="flex items-center justify-between border-t border-[#313131] pt-5"><p class="font-mono text-[10px] tracking-[0.08em] text-[#eaff00]">PROMPT SYSTEMS / NOTES</p><span class="skill-save-state font-mono text-[10px] text-[#999]"></span></div><label class="sr-only" for="note-prompt-systems">Prompt Systems 笔记</label><textarea id="note-prompt-systems" class="skill-textarea mt-4 w-full resize-y border border-[#313131] bg-[#080808] px-4 py-4 text-base leading-relaxed text-[#f2f2ed] outline-none transition placeholder:text-[#666] focus:border-[#eaff00] focus:ring-1 focus:ring-[#eaff00]" rows="7" placeholder="Write your learning notes, reusable prompts, discoveries…"></textarea><button type="button" class="skill-save glow-button mt-4 border border-[#eaff00] bg-[#eaff00] px-5 py-3 font-mono text-[11px] tracking-[0.06em] text-[#080808]">SAVE NOTE ↗</button></div></article>
+          <article class="skill-card" data-skill-id="ai-web-building"><button class="skill-trigger" type="button" aria-expanded="false"><span>02</span><h2>AI Web<br />Building</h2><p>从 concept 到可用网页，把设计、代码和内容连成一体。</p><b>ACTIVE <i>+</i></b></button><div class="skill-note hidden"><div class="flex items-center justify-between border-t border-[#313131] pt-5"><p class="font-mono text-[10px] tracking-[0.08em] text-[#eaff00]">AI WEB BUILDING / NOTES</p><span class="skill-save-state font-mono text-[10px] text-[#999]"></span></div><label class="sr-only" for="note-ai-web-building">AI Web Building 笔记</label><textarea id="note-ai-web-building" class="skill-textarea mt-4 w-full resize-y border border-[#313131] bg-[#080808] px-4 py-4 text-base leading-relaxed text-[#f2f2ed] outline-none transition placeholder:text-[#666] focus:border-[#eaff00] focus:ring-1 focus:ring-[#eaff00]" rows="7" placeholder="Document how you build with AI…"></textarea><button type="button" class="skill-save glow-button mt-4 border border-[#eaff00] bg-[#eaff00] px-5 py-3 font-mono text-[11px] tracking-[0.06em] text-[#080808]">SAVE NOTE ↗</button></div></article>
+          <article class="skill-card" data-skill-id="agent-workflow"><button class="skill-trigger" type="button" aria-expanded="false"><span>03</span><h2>Agent<br />Workflow</h2><p>探索能够分解任务、执行工具并持续迭代的智能体系统。</p><b>LEARNING <i>+</i></b></button><div class="skill-note hidden"><div class="flex items-center justify-between border-t border-[#313131] pt-5"><p class="font-mono text-[10px] tracking-[0.08em] text-[#eaff00]">AGENT WORKFLOW / NOTES</p><span class="skill-save-state font-mono text-[10px] text-[#999]"></span></div><label class="sr-only" for="note-agent-workflow">Agent Workflow 笔记</label><textarea id="note-agent-workflow" class="skill-textarea mt-4 w-full resize-y border border-[#313131] bg-[#080808] px-4 py-4 text-base leading-relaxed text-[#f2f2ed] outline-none transition placeholder:text-[#666] focus:border-[#eaff00] focus:ring-1 focus:ring-[#eaff00]" rows="7" placeholder="Track systems, experiments and agent workflows…"></textarea><button type="button" class="skill-save glow-button mt-4 border border-[#eaff00] bg-[#eaff00] px-5 py-3 font-mono text-[11px] tracking-[0.06em] text-[#080808]">SAVE NOTE ↗</button></div></article>
+          <article class="skill-card" data-skill-id="creative-direction"><button class="skill-trigger" type="button" aria-expanded="false"><span>04</span><h2>Creative<br />Direction</h2><p>用 AI 作为视觉与创意伙伴，寻找更有辨识度的表达。</p><b>EXPLORING <i>+</i></b></button><div class="skill-note hidden"><div class="flex items-center justify-between border-t border-[#313131] pt-5"><p class="font-mono text-[10px] tracking-[0.08em] text-[#eaff00]">CREATIVE DIRECTION / NOTES</p><span class="skill-save-state font-mono text-[10px] text-[#999]"></span></div><label class="sr-only" for="note-creative-direction">Creative Direction 笔记</label><textarea id="note-creative-direction" class="skill-textarea mt-4 w-full resize-y border border-[#313131] bg-[#080808] px-4 py-4 text-base leading-relaxed text-[#f2f2ed] outline-none transition placeholder:text-[#666] focus:border-[#eaff00] focus:ring-1 focus:ring-[#eaff00]" rows="7" placeholder="Keep visual references, ideas and creative experiments…"></textarea><button type="button" class="skill-save glow-button mt-4 border border-[#eaff00] bg-[#eaff00] px-5 py-3 font-mono text-[11px] tracking-[0.06em] text-[#080808]">SAVE NOTE ↗</button></div></article>
+        </div>
+      </section>
+
+      <section id="log" class="shell section log">
+        <div class="section-head"><p class="eyebrow">[ 03 — BUILD LOG ]</p><p>Not just notes.<br />Evidence of progress.</p></div>
+        <div class="log-grid">
+          <article class="featured-log"><p>SEPT / 2026</p><h2>Building a personal<br /><em>AI learning archive.</em></h2><span>FIRST SIGNAL →</span></article>
+          <ol>
+            <li><time>09.13</time><div><b>Site / v0.1</b><p>建立个人 AI 学习展示站的视觉语言与信息结构。</p></div><span>↗</span></li>
+            <li><time>—</time><div><b>Next protocol</b><p>在这里添加下一条学习记录与实践心得。</p></div><span>+</span></li>
+            <li><time>—</time><div><b>Open slot</b><p>Keep learning. Keep building.</p></div><span>+</span></li>
+          </ol>
+        </div>
+      </section>
+
+      <section id="projects" class="shell section projects">
+        <div class="section-head"><p class="eyebrow">[ 04 — OUTPUT ]</p><p>Things made while<br />learning in public.</p></div>
+        <div class="project-card"><span class="project-index">01 / 01</span><div><p>WEB EXPERIENCE</p><h2>Max / AI Build Log</h2><p class="project-desc">一个不断生长的个人作品档案，也是第一个公开实验。</p></div><a href="#top" aria-label="Back to top">↗</a></div>
+      </section>
+
+      <section id="about" class="shell about">
+        <p class="eyebrow">[ 05 — ABOUT MAX ]</p>
+        <h2>I learn in public<br />so ideas can become <em>real.</em></h2>
+        <div><p>这是我的 AI 实验现场。记录输入，也记录输出；保留过程中的不确定性，更在意真正完成的作品。</p><a class="mail" href="mailto:hello@example.com">LET'S CONNECT ↗</a></div>
+      </section>
+    </main>
+
+    <footer class="shell"><span>© 2026 MAX</span><span>BUILT WITH CURIOSITY + AI</span><a href="#top">BACK TO TOP ↑</a></footer>
+    <script src="script.js"></script>
+  </body>
+</html>

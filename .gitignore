@@ -1,0 +1,12 @@
+# dependencies and build output
+node_modules/
+.next/
+out/
+
+# local environment files
+.env*
+!.env.example
+
+# OS and editor files
+.DS_Store
+*.log
