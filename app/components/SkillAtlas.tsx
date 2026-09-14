@@ -68,6 +68,139 @@ const rimFragmentShader = `
   }
 `;
 
+// Adapted from the supplied Web Threads fragment program.  It uses card UVs
+// (rather than the whole canvas pixels) so each individual 3D card owns a
+// complete network-thread field inside its rounded face.
+const webThreadsVertexShader = `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const webThreadsFragmentShader = `
+  uniform float uTime;
+  uniform float uOpacity;
+  uniform float uBrightness;
+  uniform float uMouseStrength;
+  uniform float uMouseActive;
+  uniform vec2 uMouse;
+  uniform vec3 uColor1;
+  uniform vec3 uColor2;
+  uniform vec3 uColor3;
+  varying vec2 vUv;
+
+  #define TAU 6.28318530718
+  #define THREAD_COUNT 6
+
+  float glow(float x, float falloff, float strength) {
+    return strength / pow(max(x, 0.0001), falloff);
+  }
+
+  float grain(vec2 point) {
+    return fract(sin(dot(point + uTime, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
+  }
+
+  void main() {
+    vec2 uv = vUv;
+    float pinchX = mix(0.5, uMouse.x, uMouseActive * 0.3);
+    float spreadDx = 0.18 * abs(uv.x - pinchX);
+    float baseTime = uTime * 0.17;
+    float yOffset = uv.y - 0.5;
+    vec3 color = vec3(0.0);
+    float totalGlow = 0.0;
+
+    for (int index = 0; index < THREAD_COUNT; index++) {
+      float i = float(index);
+      float amplitude = spreadDx * (1.0 + i);
+      float phase = (baseTime + i * (TAU / float(THREAD_COUNT))) * sign(pinchX - uv.x);
+      float sdf = abs(yOffset + sin(uv.x * 5.0 + phase) * amplitude) / 1.1;
+      float threadGlow = glow(sdf, 0.6, 0.02);
+      vec3 threadColor = mix(uColor1, uColor2, i / float(THREAD_COUNT - 1));
+      color += threadGlow * threadColor;
+      totalGlow += threadGlow;
+    }
+
+    float core = smoothstep(0.5, 2.2, totalGlow);
+    color = mix(color, uColor3 * totalGlow, core * 0.5);
+    float mouseDistance = dot(uv - uMouse, uv - uMouse);
+    float mouseBloom = uMouseActive * uMouseStrength * exp(-mouseDistance * 6.0) * 0.6;
+    color *= uBrightness + mouseBloom;
+    float alpha = clamp(totalGlow, 0.0, 1.0) * uOpacity;
+    float noise = grain(uv * 211.0) * 0.025;
+    color = max(color + noise, vec3(0.0));
+    gl_FragColor = vec4(color * alpha, alpha);
+  }
+`;
+
+function WebThreadsCardBackground({ cardRef, active, compact }: { cardRef: React.RefObject<THREE.Group | null>; active: boolean; compact: boolean }) {
+  const material = useRef<THREE.ShaderMaterial>(null);
+  const plane = useMemo(() => new THREE.Plane(), []);
+  const worldPosition = useMemo(() => new THREE.Vector3(), []);
+  const worldPointer = useMemo(() => new THREE.Vector3(), []);
+  const localPointer = useMemo(() => new THREE.Vector3(), []);
+  const worldNormal = useMemo(() => new THREE.Vector3(), []);
+  const quaternion = useMemo(() => new THREE.Quaternion(), []);
+  const reducedMotion = useRef(false);
+  const mouseState = useRef({ x: 0.5, y: 0.5, active: 0 });
+  const uniforms = useMemo(() => ({
+    uTime: { value: 0 },
+    uOpacity: { value: 0.38 },
+    uBrightness: { value: 0.48 },
+    uMouseStrength: { value: 0.18 },
+    uMouseActive: { value: 0 },
+    uMouse: { value: new THREE.Vector2(0.5, 0.5) },
+    uColor1: { value: new THREE.Color("#1f83c7") },
+    uColor2: { value: new THREE.Color("#8ed8ff") },
+    uColor3: { value: new THREE.Color("#e7f7ff") },
+  }), []);
+
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => { reducedMotion.current = query.matches; };
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  useFrame((state, delta) => {
+    const card = cardRef.current;
+    const shader = material.current;
+    if (!card || !shader) return;
+
+    card.getWorldPosition(worldPosition);
+    card.getWorldQuaternion(quaternion);
+    worldNormal.set(0, 0, 1).applyQuaternion(quaternion);
+    plane.setFromNormalAndCoplanarPoint(worldNormal, worldPosition);
+    const hit = state.raycaster.ray.intersectPlane(plane, worldPointer);
+    const pointer = mouseState.current;
+    let targetActive = 0;
+
+    if (hit) {
+      localPointer.copy(worldPointer);
+      card.worldToLocal(localPointer);
+      const inside = Math.abs(localPointer.x) <= 1.01 && Math.abs(localPointer.y) <= 1.43;
+      if (inside && !compact) {
+        pointer.x = THREE.MathUtils.clamp((localPointer.x + 1.01) / 2.02, 0, 1);
+        pointer.y = THREE.MathUtils.clamp((localPointer.y + 1.43) / 2.86, 0, 1);
+        targetActive = 1;
+      }
+    }
+
+    pointer.active = THREE.MathUtils.damp(pointer.active, targetActive, 6, delta);
+    shader.uniforms.uTime.value = reducedMotion.current ? 0 : state.clock.getElapsedTime();
+    shader.uniforms.uMouse.value.set(pointer.x, pointer.y);
+    shader.uniforms.uMouseActive.value = pointer.active;
+    shader.uniforms.uOpacity.value = THREE.MathUtils.damp(shader.uniforms.uOpacity.value, active ? 0.66 : 0.34, 5, delta);
+    shader.uniforms.uBrightness.value = THREE.MathUtils.damp(shader.uniforms.uBrightness.value, active ? 0.76 : 0.46, 5, delta);
+  });
+
+  return <RoundedBox args={[2.02, 2.86, 0.006]} position={[0, 0, 0.093]} radius={0.11} smoothness={5} renderOrder={1}>
+    <shaderMaterial ref={material} vertexShader={webThreadsVertexShader} fragmentShader={webThreadsFragmentShader} uniforms={uniforms} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
+  </RoundedBox>;
+}
+
 function SpecularRim({ cardRef, active }: { cardRef: React.RefObject<THREE.Group | null>; active: boolean }) {
   const material = useRef<THREE.ShaderMaterial>(null);
   const plane = useMemo(() => new THREE.Plane(), []);
@@ -179,7 +312,7 @@ function CardHud({ active }: { active: boolean }) {
   </group>;
 }
 
-function Card({ skill, offset, active, onOpen, onHover, revealed, revealDelay }: { skill: Skill; offset: number; active: boolean; onOpen: () => void; onHover: () => void; revealed: boolean; revealDelay: number }) {
+function Card({ skill, offset, active, onOpen, onHover, revealed, revealDelay, compact }: { skill: Skill; offset: number; active: boolean; onOpen: () => void; onHover: () => void; revealed: boolean; revealDelay: number; compact: boolean }) {
   const group = useRef<THREE.Group>(null);
   const revealStart = useRef<number | null>(null);
   const target = useMemo(() => new THREE.Vector3(offset * 2.15, offset === 0 ? 0.06 : -0.08, -Math.abs(offset) * 2.05), [offset]);
@@ -209,6 +342,7 @@ function Card({ skill, offset, active, onOpen, onHover, revealed, revealDelay }:
       </RoundedBox>
       <SpecularRim cardRef={group} active={active} />
       <mesh position={[0, 0, 0.091]}><planeGeometry args={[2.02, 2.85]} /><meshBasicMaterial color={active ? "#0c315a" : "#06172b"} transparent opacity={0.84} /></mesh>
+      <WebThreadsCardBackground cardRef={group} active={active} compact={compact} />
       <mesh position={[0, 0.92, 0.097]}><planeGeometry args={[1.82, 0.01]} /><meshBasicMaterial color="#93d8ff" transparent opacity={active ? 0.86 : 0.32} /></mesh>
       <Text position={[-0.81, 1.19, 0.1]} anchorX="left" fontSize={0.105} letterSpacing={0.12} color="#8ed8ff">{skill.number}</Text>
       <Text position={[0.81, 1.19, 0.1]} anchorX="right" fontSize={0.075} letterSpacing={0.08} color="#a5dffb">{skill.status}</Text>
@@ -243,7 +377,7 @@ function Scene({ skills, activeIndex, onSelect, onHover, onOpen, revealed, compa
       <pointLight position={[2.5, -1, 3]} intensity={11} distance={9} color="#2384dc" />
       {!compact && <ContactShadows position={[0, -1.88, -0.6]} opacity={0.52} scale={12} blur={2.8} far={5.4} color="#00040a" />}
       <Float speed={1.15} rotationIntensity={0.03} floatIntensity={0.1}>
-        <group ref={root}>{skills.map((skill, index) => <Card key={skill.id} skill={skill} offset={index - activeIndex} active={index === activeIndex} onOpen={() => onOpen(skill.href)} onHover={() => onHover(index)} revealed={revealed} revealDelay={index * 0.1} />)}</group>
+        <group ref={root}>{skills.map((skill, index) => <Card key={skill.id} skill={skill} offset={index - activeIndex} active={index === activeIndex} onOpen={() => onOpen(skill.href)} onHover={() => onHover(index)} revealed={revealed} revealDelay={index * 0.1} compact={compact} />)}</group>
       </Float>
     </>
   );
