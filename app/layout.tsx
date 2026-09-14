@@ -14,6 +14,9 @@ export const metadata: Metadata = {
   authors: [{ name: "Max" }],
   creator: "Max",
   robots: { index: true, follow: true },
+  verification: {
+    google: "NhB0yylhBDOQqOAKlIXNLq4O2jqtXO7k0h0GJcFhMCw",
+  },
   openGraph: {
     type: "website",
     locale: "zh_CN",
