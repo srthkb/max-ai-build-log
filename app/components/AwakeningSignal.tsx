@@ -46,6 +46,7 @@ type ParticleTextSignalProps = {
   alphaThreshold?: number;
   particleSize?: number;
   fontSize?: string;
+  framed?: boolean;
 };
 
 /** Canvas particle text, replacing the previous 3D particle grid. */
@@ -57,6 +58,7 @@ export default function AwakeningSignal({
   alphaThreshold = 40,
   particleSize = 1,
   fontSize: fontSizeValue = "clamp(2rem, 6vw, 4.8rem)",
+  framed = true,
 }: ParticleTextSignalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -166,26 +168,31 @@ export default function AwakeningSignal({
       const offContext = offscreen.getContext("2d", { willReadFrequently: true });
       if (!offContext) return;
       offContext.font = font;
+      const lines = text.split(/\r?\n/).filter(Boolean);
       const maxTextWidth = width * 0.86;
-      const initialMetrics = offContext.measureText(text);
-      if (initialMetrics.width > maxTextWidth) {
-        fontSize = Math.max(22, fontSize * (maxTextWidth / initialMetrics.width));
+      const measureLines = () => lines.map((line) => offContext.measureText(line));
+      let lineMetrics = measureLines();
+      const initialWidth = Math.max(...lineMetrics.map((metrics) => metrics.width), 0);
+      if (initialWidth > maxTextWidth) {
+        fontSize = Math.max(22, fontSize * (maxTextWidth / initialWidth));
         font = `800 ${fontSize}px ${fontFamily}`;
         offContext.font = font;
+        lineMetrics = measureLines();
       }
-      const metrics = offContext.measureText(text);
-      const left = Math.ceil(metrics.actualBoundingBoxLeft || 0);
-      const right = Math.ceil(metrics.actualBoundingBoxRight || metrics.width);
-      const ascent = Math.ceil(metrics.actualBoundingBoxAscent || fontSize * 0.78);
-      const descent = Math.ceil(metrics.actualBoundingBoxDescent || fontSize * 0.22);
-      const textWidth = left + right;
+      const textWidth = Math.ceil(Math.max(...lineMetrics.map((metrics) => metrics.width), 0));
+      const ascent = Math.ceil(Math.max(...lineMetrics.map((metrics) => metrics.actualBoundingBoxAscent || fontSize * 0.78), fontSize * 0.78));
+      const descent = Math.ceil(Math.max(...lineMetrics.map((metrics) => metrics.actualBoundingBoxDescent || fontSize * 0.22), fontSize * 0.22));
+      const lineHeight = Math.ceil(fontSize * 1.08);
       const padding = Math.max(14, Math.ceil(fontSize * 0.11));
       offscreen.width = textWidth + padding * 2;
-      offscreen.height = ascent + descent + padding * 2;
+      offscreen.height = lineHeight * lines.length + padding * 2;
       offContext.font = font;
       offContext.fillStyle = "#fff";
       offContext.textBaseline = "alphabetic";
-      offContext.fillText(text, padding - left, padding + ascent);
+      lines.forEach((line, index) => {
+        const lineWidth = offContext.measureText(line).width;
+        offContext.fillText(line, padding + (textWidth - lineWidth) / 2, padding + ascent + index * lineHeight);
+      });
 
       const pixels = offContext.getImageData(0, 0, offscreen.width, offscreen.height).data;
       const targets: { x: number; y: number }[] = [];
@@ -243,11 +250,10 @@ export default function AwakeningSignal({
     };
   }, [alphaThreshold, fontSizeValue, particleSize, sampleStep, text]);
 
-  return <div ref={containerRef} className="relative mt-10 h-[220px] overflow-hidden rounded-2xl border border-sky-100/35 bg-[#050b14] shadow-[0_24px_66px_rgba(0,0,0,.5),0_0_64px_rgba(56,189,248,.2)] sm:mt-14 sm:h-[300px] sm:rounded-3xl">
+  return <div ref={containerRef} className={framed ? "relative mt-10 h-[220px] overflow-hidden rounded-2xl border border-sky-100/35 bg-[#050b14] shadow-[0_24px_66px_rgba(0,0,0,.5),0_0_64px_rgba(56,189,248,.2)] sm:mt-14 sm:h-[300px] sm:rounded-3xl" : "relative h-[clamp(10rem,24vw,17rem)] overflow-hidden"}>
     <canvas ref={canvasRef} aria-hidden="true" className="absolute inset-0 block size-full touch-pan-y" />
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,rgba(56,189,248,.08),transparent_48%),linear-gradient(90deg,rgba(3,9,18,.5),transparent_24%,transparent_76%,rgba(3,9,18,.5))]" />
-    <p className="pointer-events-none absolute left-5 top-5 text-[9px] font-medium tracking-[.18em] text-sky-50/85 sm:left-7 sm:top-6 sm:text-[10px] sm:tracking-[.24em]">{topLabel}</p>
-    <p className="pointer-events-none absolute bottom-5 left-5 text-[9px] font-medium tracking-[.15em] text-sky-100/80 sm:bottom-6 sm:left-7 sm:text-[10px] sm:tracking-[.22em]">{bottomLabel}</p>
+    {framed && <><p className="pointer-events-none absolute left-5 top-5 text-[9px] font-medium tracking-[.18em] text-sky-50/85 sm:left-7 sm:top-6 sm:text-[10px] sm:tracking-[.24em]">{topLabel}</p><p className="pointer-events-none absolute bottom-5 left-5 text-[9px] font-medium tracking-[.15em] text-sky-100/80 sm:bottom-6 sm:left-7 sm:text-[10px] sm:tracking-[.22em]">{bottomLabel}</p></>}
     <span className="sr-only">{text}</span>
   </div>;
 }
