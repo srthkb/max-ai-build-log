@@ -1,81 +1,251 @@
 "use client";
 
-import { Canvas, useFrame } from "@react-three/fiber";
-import { useReducedMotion } from "framer-motion";
-import { useMemo, useRef } from "react";
-import * as THREE from "three";
+import { useEffect, useRef } from "react";
 
-type Point = { x: number; y: number; z: number; phase: number };
+type Rgb = { r: number; g: number; b: number };
 
-function SignalField({ reduceMotion }: { reduceMotion: boolean | null }) {
-  const particles = useMemo<Point[]>(() => Array.from({ length: 180 }, (_, index) => {
-    const column = index % 18;
-    const row = Math.floor(index / 18);
-    const x = (column - 8.5) * 0.39 + Math.sin(index * 1.71) * 0.07;
-    const y = (row - 4.5) * 0.28 + Math.cos(index * 1.37) * 0.08;
-    return { x, y, z: -0.25 - Math.abs(x) * 0.14 + Math.sin(index * 0.73) * 0.16, phase: index * 0.32 };
-  }), []);
-  const position = useMemo(() => new Float32Array(particles.flatMap((point) => [point.x, point.y, point.z])), [particles]);
-  const links = useMemo(() => {
-    const values = new Float32Array(54 * 2 * 3);
-    for (let index = 0; index < 54; index += 1) {
-      const from = particles[(index * 3) % particles.length];
-      const to = particles[(index * 11 + 31) % particles.length];
-      values.set([from.x, from.y, from.z - 0.03, to.x, to.y, to.z - 0.03], index * 6);
-    }
-    return values;
-  }, [particles]);
-  const points = useRef<THREE.Points>(null);
-  const pulse = useRef(0);
+const DEFAULT_PARTICLE_TEXT = "MaxForge | AI网站设计";
+const DEFAULT_TOP_LABEL = "AWAKENING SIGNAL / PARTICLE TYPE";
+const DEFAULT_BOTTOM_LABEL = "MOVE THROUGH THE FIELD";
 
-  useFrame((state, delta) => {
-    const geometry = points.current?.geometry;
-    const attribute = geometry?.getAttribute("position") as THREE.BufferAttribute | undefined;
-    if (!attribute) return;
-
-    const values = attribute.array as Float32Array;
-    const time = state.clock.getElapsedTime();
-    const pointerX = state.pointer.x * 3.5;
-    const pointerY = state.pointer.y * 2.15;
-    pulse.current = Math.max(0, pulse.current - delta * 1.5);
-
-    particles.forEach((point, index) => {
-      const distance = Math.hypot(point.x - pointerX, point.y - pointerY);
-      const influence = reduceMotion ? 0 : Math.exp(-distance * distance * 1.5) * (0.24 + pulse.current * 0.26);
-      const wave = reduceMotion ? 0 : Math.sin(time * 1.2 + point.phase) * 0.055;
-      values[index * 3] = point.x + (point.x - pointerX) * influence * 0.2;
-      values[index * 3 + 1] = point.y + wave + (point.y - pointerY) * influence * 0.16;
-      values[index * 3 + 2] = point.z + Math.sin(time * 0.9 + point.phase) * 0.11 + influence * 0.48;
-    });
-    attribute.needsUpdate = true;
-  });
-
-  return <group onPointerDown={() => { pulse.current = 1; }}>
-    <points ref={points}><bufferGeometry><bufferAttribute attach="attributes-position" args={[position, 3]} /></bufferGeometry><pointsMaterial color="#b9ecff" size={0.052} sizeAttenuation transparent opacity={0.88} depthWrite={false} /></points>
-    <lineSegments><bufferGeometry><bufferAttribute attach="attributes-position" args={[links, 3]} /></bufferGeometry><lineBasicMaterial color="#74cbff" transparent opacity={0.15} depthWrite={false} /></lineSegments>
-  </group>;
+function hexToRgb(hex: string): Rgb | null {
+  const clean = hex.replace("#", "").trim();
+  if (!/^[0-9a-fA-F]{6}$/.test(clean)) return null;
+  return { r: Number.parseInt(clean.slice(0, 2), 16), g: Number.parseInt(clean.slice(2, 4), 16), b: Number.parseInt(clean.slice(4, 6), 16) };
 }
 
-function SignalScene({ reduceMotion }: { reduceMotion: boolean | null }) {
-  return <>
-    <color attach="background" args={["#06101d"]} />
-    <fog attach="fog" args={["#06101d", 3.8, 10]} />
-    <ambientLight intensity={0.85} color="#bcecff" />
-    <pointLight position={[0, 1.4, 2.8]} intensity={5} distance={7} color="#3caeff" />
-    <gridHelper args={[10, 24, "#195b86", "#0b2940"]} position={[0, -1.65, -1.8]} rotation={[Math.PI / 2.75, 0, 0]} />
-    <SignalField reduceMotion={reduceMotion} />
-  </>;
+function mixRgb(from: Rgb, to: Rgb, amount: number) {
+  return `rgb(${Math.round(from.r + (to.r - from.r) * amount)}, ${Math.round(from.g + (to.g - from.g) * amount)}, ${Math.round(from.b + (to.b - from.b) * amount)})`;
 }
 
-export default function AwakeningSignal() {
-  const reduceMotion = useReducedMotion();
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
 
-  return <div className="relative mt-10 h-[220px] overflow-hidden rounded-2xl border border-sky-200/25 bg-[#06101d] shadow-[0_20px_60px_rgba(0,0,0,.45),0_0_48px_rgba(56,189,248,.12)] sm:mt-14 sm:h-[300px] sm:rounded-3xl">
-    <Canvas dpr={[1, 1.5]} camera={{ position: [0, 0, 5.4], fov: 48 }} gl={{ antialias: true, powerPreference: "high-performance" }} style={{ touchAction: "pan-y" }}>
-      <SignalScene reduceMotion={reduceMotion} />
-    </Canvas>
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,transparent_20%,rgba(3,9,18,.38)_76%),linear-gradient(90deg,rgba(3,9,18,.45),transparent_45%,rgba(3,9,18,.3))]" />
-    <p className="pointer-events-none absolute left-5 top-5 text-[9px] font-medium tracking-[.18em] text-sky-100/70 sm:left-7 sm:top-6 sm:text-[10px] sm:tracking-[.24em]">AWAKENING SIGNAL / TOUCH THE FIELD</p>
-    <p className="pointer-events-none absolute bottom-5 left-5 text-[9px] font-medium tracking-[.15em] text-sky-100/65 sm:bottom-6 sm:left-7 sm:text-[10px] sm:tracking-[.22em]">FROM UNCERTAINTY TO ACTION</p>
+function easeOutCubic(value: number) {
+  return 1 - (1 - value) ** 3;
+}
+
+function resolveFontSize(value: string, container: HTMLElement, fontFamily: string) {
+  const probe = document.createElement("span");
+  probe.textContent = "M";
+  probe.style.cssText = `position:absolute;visibility:hidden;pointer-events:none;font-size:${value};font-weight:800;font-family:${fontFamily};`;
+  container.appendChild(probe);
+  const size = Number.parseFloat(window.getComputedStyle(probe).fontSize) || 56;
+  probe.remove();
+  return size;
+}
+
+type Particle = { x: number; y: number; startX: number; startY: number; targetX: number; targetY: number; size: number; color: string; seed: number; delay: number };
+
+type ParticleTextSignalProps = {
+  text?: string;
+  topLabel?: string;
+  bottomLabel?: string;
+  sampleStep?: number;
+  alphaThreshold?: number;
+  particleSize?: number;
+};
+
+/** Canvas particle text, replacing the previous 3D particle grid. */
+export default function AwakeningSignal({
+  text = DEFAULT_PARTICLE_TEXT,
+  topLabel = DEFAULT_TOP_LABEL,
+  bottomLabel = DEFAULT_BOTTOM_LABEL,
+  sampleStep = 3,
+  alphaThreshold = 40,
+  particleSize = 1,
+}: ParticleTextSignalProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext("2d");
+    if (!container || !canvas || !context) return;
+
+    let particles: Particle[] = [];
+    let animationFrame = 0;
+    let resizeFrame = 0;
+    let buildId = 0;
+    let gathering = false;
+    let gatherStart = 0;
+    let width = 0;
+    let height = 0;
+    let reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const pointer = { active: false, x: 0, y: 0, smoothX: 0, smoothY: 0 };
+    const baseColor = hexToRgb("#e0f7ff");
+    const highlightColor = hexToRgb("#38bdf8");
+
+    const startGather = (fromScatter: boolean) => {
+      if (!particles.length) return;
+      const now = performance.now();
+      for (const particle of particles) {
+        if (fromScatter && !reducedMotion) {
+          const angle = particle.seed * Math.PI * 2;
+          const distance = 160 * (0.42 + particle.seed * 0.72);
+          particle.x = particle.targetX + Math.cos(angle) * distance + (particle.seed - 0.5) * 100;
+          particle.y = particle.targetY + Math.sin(angle) * distance + (particle.seed - 0.5) * 82;
+        }
+        particle.startX = particle.x;
+        particle.startY = particle.y;
+        particle.delay = reducedMotion ? 0 : particle.seed * 360;
+      }
+      gatherStart = now;
+      gathering = !reducedMotion;
+    };
+
+    const render = (now: number) => {
+      context.clearRect(0, 0, width, height);
+      pointer.smoothX += (pointer.x - pointer.smoothX) * 0.15;
+      pointer.smoothY += (pointer.y - pointer.smoothY) * 0.15;
+      // Keep glyph edges crisp. A per-particle blur merged neighbouring Chinese strokes.
+      context.shadowBlur = 0;
+      let complete = true;
+
+      for (const particle of particles) {
+        let targetX = particle.targetX;
+        let targetY = particle.targetY;
+        let progress = 1;
+        if (gathering) {
+          progress = clamp((now - gatherStart - particle.delay) / 1280, 0, 1);
+          const eased = easeOutCubic(progress);
+          targetX = particle.startX + (particle.targetX - particle.startX) * eased;
+          targetY = particle.startY + (particle.targetY - particle.startY) * eased;
+          if (progress < 1) complete = false;
+        } else if (!reducedMotion) {
+          const driftTime = now * 0.001;
+          targetX += Math.sin(driftTime * 0.86 + particle.seed * 13) * 0.62;
+          targetY += Math.cos(driftTime * 0.7 + particle.seed * 11) * 0.56;
+        }
+        if (pointer.active && !reducedMotion) {
+          const dx = targetX - pointer.smoothX;
+          const dy = targetY - pointer.smoothY;
+          const distance = Math.hypot(dx, dy);
+          if (distance > 0.01 && distance < 126) {
+            const force = (1 - distance / 126) ** 2 * 38;
+            targetX += (dx / distance) * force;
+            targetY += (dy / distance) * force;
+          }
+        }
+        const follow = reducedMotion ? 1 : 0.2;
+        particle.x += (targetX - particle.x) * follow;
+        particle.y += (targetY - particle.y) * follow;
+        context.globalAlpha = clamp(0.32 + progress * 0.68, 0, 1);
+        context.fillStyle = particle.color;
+        context.beginPath();
+        context.arc(particle.x, particle.y, particle.size / 2, 0, Math.PI * 2);
+        context.fill();
+      }
+      context.globalAlpha = 1;
+      context.shadowBlur = 0;
+      if (complete) gathering = false;
+      animationFrame = window.requestAnimationFrame(render);
+    };
+
+    const sampleText = async () => {
+      const currentBuild = ++buildId;
+      const rect = container.getBoundingClientRect();
+      width = Math.floor(rect.width);
+      height = Math.floor(rect.height);
+      if (width <= 0 || height <= 0) return;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      context.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const fontFamily = window.getComputedStyle(container).fontFamily || "sans-serif";
+      let fontSize = resolveFontSize("clamp(2rem, 6vw, 4.8rem)", container, fontFamily);
+      let font = `800 ${fontSize}px ${fontFamily}`;
+      if (document.fonts) await document.fonts.ready;
+      if (currentBuild !== buildId) return;
+      const offscreen = document.createElement("canvas");
+      const offContext = offscreen.getContext("2d", { willReadFrequently: true });
+      if (!offContext) return;
+      offContext.font = font;
+      const maxTextWidth = width * 0.86;
+      const initialMetrics = offContext.measureText(text);
+      if (initialMetrics.width > maxTextWidth) {
+        fontSize = Math.max(22, fontSize * (maxTextWidth / initialMetrics.width));
+        font = `800 ${fontSize}px ${fontFamily}`;
+        offContext.font = font;
+      }
+      const metrics = offContext.measureText(text);
+      const left = Math.ceil(metrics.actualBoundingBoxLeft || 0);
+      const right = Math.ceil(metrics.actualBoundingBoxRight || metrics.width);
+      const ascent = Math.ceil(metrics.actualBoundingBoxAscent || fontSize * 0.78);
+      const descent = Math.ceil(metrics.actualBoundingBoxDescent || fontSize * 0.22);
+      const textWidth = left + right;
+      const padding = Math.max(14, Math.ceil(fontSize * 0.11));
+      offscreen.width = textWidth + padding * 2;
+      offscreen.height = ascent + descent + padding * 2;
+      offContext.font = font;
+      offContext.fillStyle = "#fff";
+      offContext.textBaseline = "alphabetic";
+      offContext.fillText(text, padding - left, padding + ascent);
+
+      const pixels = offContext.getImageData(0, 0, offscreen.width, offscreen.height).data;
+      const targets: { x: number; y: number }[] = [];
+      for (let y = 0; y < offscreen.height; y += sampleStep) {
+        for (let x = 0; x < offscreen.width; x += sampleStep) {
+          if (pixels[(y * offscreen.width + x) * 4 + 3] > alphaThreshold) targets.push({ x: width / 2 - offscreen.width / 2 + x, y: height / 2 - offscreen.height / 2 + y });
+        }
+      }
+      const maxParticles = Math.max(1100, Math.min(3600, Math.floor((width * height) / 78)));
+      const stride = Math.max(1, Math.ceil(targets.length / maxParticles));
+      particles = targets.filter((_, index) => index % stride === 0).map((target, index) => {
+        const seed = ((index * 9301 + 49297) % 233280) / 233280;
+        const color = baseColor && highlightColor ? mixRgb(baseColor, highlightColor, clamp(target.x / Math.max(1, width) + (seed - 0.5) * 0.26, 0, 1)) : "#e0f7ff";
+        const angle = seed * Math.PI * 2;
+        const distance = reducedMotion ? 0 : 160 * (0.42 + seed * 0.72);
+        return { x: target.x + Math.cos(angle) * distance, y: target.y + Math.sin(angle) * distance, startX: target.x, startY: target.y, targetX: target.x, targetY: target.y, size: particleSize * (1.05 + seed * 0.42), color, seed, delay: seed * 360 };
+      });
+      pointer.x = width / 2;
+      pointer.y = height / 2;
+      pointer.smoothX = pointer.x;
+      pointer.smoothY = pointer.y;
+      startGather(false);
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      pointer.x = event.clientX - rect.left;
+      pointer.y = event.clientY - rect.top;
+      pointer.active = true;
+    };
+    const handlePointerLeave = () => { pointer.active = false; };
+    const handleReducedMotion = (event: MediaQueryListEvent) => { reducedMotion = event.matches; void sampleText(); };
+    const queueSample = () => {
+      window.cancelAnimationFrame(resizeFrame);
+      resizeFrame = window.requestAnimationFrame(() => { void sampleText(); });
+    };
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    mediaQuery.addEventListener("change", handleReducedMotion);
+    canvas.addEventListener("pointermove", handlePointerMove);
+    canvas.addEventListener("pointerenter", handlePointerMove);
+    canvas.addEventListener("pointerleave", handlePointerLeave);
+    const observer = new ResizeObserver(queueSample);
+    observer.observe(container);
+    void sampleText();
+    animationFrame = window.requestAnimationFrame(render);
+    return () => {
+      buildId += 1;
+      observer.disconnect();
+      mediaQuery.removeEventListener("change", handleReducedMotion);
+      canvas.removeEventListener("pointermove", handlePointerMove);
+      canvas.removeEventListener("pointerenter", handlePointerMove);
+      canvas.removeEventListener("pointerleave", handlePointerLeave);
+      window.cancelAnimationFrame(animationFrame);
+      window.cancelAnimationFrame(resizeFrame);
+    };
+  }, [alphaThreshold, particleSize, sampleStep, text]);
+
+  return <div ref={containerRef} className="relative mt-10 h-[220px] overflow-hidden rounded-2xl border border-sky-100/35 bg-[#050b14] shadow-[0_24px_66px_rgba(0,0,0,.5),0_0_64px_rgba(56,189,248,.2)] sm:mt-14 sm:h-[300px] sm:rounded-3xl">
+    <canvas ref={canvasRef} aria-hidden="true" className="absolute inset-0 block size-full touch-pan-y" />
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,rgba(56,189,248,.08),transparent_48%),linear-gradient(90deg,rgba(3,9,18,.5),transparent_24%,transparent_76%,rgba(3,9,18,.5))]" />
+    <p className="pointer-events-none absolute left-5 top-5 text-[9px] font-medium tracking-[.18em] text-sky-50/85 sm:left-7 sm:top-6 sm:text-[10px] sm:tracking-[.24em]">{topLabel}</p>
+    <p className="pointer-events-none absolute bottom-5 left-5 text-[9px] font-medium tracking-[.15em] text-sky-100/80 sm:bottom-6 sm:left-7 sm:text-[10px] sm:tracking-[.22em]">{bottomLabel}</p>
+    <span className="sr-only">{text}</span>
   </div>;
 }
