@@ -24,7 +24,7 @@ export default function ContactPage() {
         <section className="border-b border-sky-100/15 pb-10 md:pb-14">
           <p className="text-[10px] tracking-[.18em] text-sky-300">[ CONTACT / BUILD SIGNAL ]</p>
           <div className="mt-5 max-w-5xl">
-            <AwakeningSignal text={'LET’S BUILD SOMETHING\n一起做点什么'} topLabel="" bottomLabel="" sampleStep={3} alphaThreshold={70} particleSize={1.25} fontSize="clamp(3rem, 12vw, 7rem)" framed={false} />
+            <AwakeningSignal text={'LET’S BUILD\nSOMETHING\n一起做点什么'} topLabel="" bottomLabel="" sampleStep={4} alphaThreshold={130} particleSize={1.05} fontSize="clamp(3rem, 12vw, 7rem)" framed={false} />
           </div>
         </section>
         <div className="flex flex-col items-start gap-3 border-b border-sky-100/15 py-6 text-xs leading-relaxed tracking-[.14em] text-left text-sky-100/70 sm:flex-row sm:items-center sm:gap-8">
