@@ -367,16 +367,16 @@ function Card({ skill, offset, active, onOpen, onHover, revealed, revealDelay, c
   return (
     <group ref={group} onPointerOver={(event) => { event.stopPropagation(); onHover(); }} onClick={(event) => { event.stopPropagation(); if (active) onOpen(); else onHover(); }}>
       <RoundedBox args={[2.18, 3.02, 0.16]} radius={0.13} smoothness={5} castShadow receiveShadow>
-        <meshPhysicalMaterial color={active ? "#06080c" : "#030508"} roughness={0.3} metalness={0.34} clearcoat={0.95} clearcoatRoughness={0.16} transmission={0.1} transparent opacity={0.88} />
+        <meshPhysicalMaterial color={active ? "#071522" : "#030910"} roughness={0.42} metalness={0.12} clearcoat={0.72} clearcoatRoughness={0.2} transmission={0.28} thickness={0.24} ior={1.45} transparent opacity={active ? 0.72 : 0.58} />
       </RoundedBox>
       <SpecularRim cardRef={group} active={active} />
-      <mesh position={[0, 0, 0.091]}><planeGeometry args={[2.02, 2.85]} /><meshBasicMaterial color={active ? "#02060b" : "#010204"} transparent opacity={0.76} /></mesh>
+      <mesh position={[0, 0, 0.091]}><planeGeometry args={[2.02, 2.85]} /><meshBasicMaterial color={active ? "#020914" : "#01050a"} transparent opacity={active ? 0.34 : 0.28} /></mesh>
       <SelectionReflection active={active} />
       <mesh position={[0, 0.92, 0.097]}><planeGeometry args={[1.82, 0.01]} /><meshBasicMaterial color="#93d8ff" transparent opacity={active ? 0.86 : 0.32} /></mesh>
       <Text position={[-0.81, 1.19, 0.1]} anchorX="left" fontSize={0.105} letterSpacing={0.12} color="#8ed8ff">{skill.number}</Text>
       <Text position={[0.81, 1.19, 0.1]} anchorX="right" fontSize={0.075} letterSpacing={0.08} color="#a5dffb">{skill.status}</Text>
       <CardHud active={active} />
-      {active && <><TypewriterCardTitle text={skill.title} active={active} /><Text position={[-0.81, -1.15, 0.1]} anchorX="left" fontSize={0.07} letterSpacing={0.085} color="#b9ecff">{">_ [CLICK TO OPEN]"}</Text></>}
+      {active && <><TypewriterCardTitle text={skill.cardTitle || skill.title} active={active} /><Text position={[-0.81, -1.15, 0.1]} anchorX="left" fontSize={0.07} letterSpacing={0.085} color="#b9ecff">{">_ [CLICK TO OPEN]"}</Text></>}
     </group>
   );
 }

@@ -45,6 +45,7 @@ type ParticleTextSignalProps = {
   sampleStep?: number;
   alphaThreshold?: number;
   particleSize?: number;
+  fontSize?: string;
 };
 
 /** Canvas particle text, replacing the previous 3D particle grid. */
@@ -55,6 +56,7 @@ export default function AwakeningSignal({
   sampleStep = 3,
   alphaThreshold = 40,
   particleSize = 1,
+  fontSize: fontSizeValue = "clamp(2rem, 6vw, 4.8rem)",
 }: ParticleTextSignalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -156,7 +158,7 @@ export default function AwakeningSignal({
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       const fontFamily = window.getComputedStyle(container).fontFamily || "sans-serif";
-      let fontSize = resolveFontSize("clamp(2rem, 6vw, 4.8rem)", container, fontFamily);
+      let fontSize = resolveFontSize(fontSizeValue, container, fontFamily);
       let font = `800 ${fontSize}px ${fontFamily}`;
       if (document.fonts) await document.fonts.ready;
       if (currentBuild !== buildId) return;
@@ -239,7 +241,7 @@ export default function AwakeningSignal({
       window.cancelAnimationFrame(animationFrame);
       window.cancelAnimationFrame(resizeFrame);
     };
-  }, [alphaThreshold, particleSize, sampleStep, text]);
+  }, [alphaThreshold, fontSizeValue, particleSize, sampleStep, text]);
 
   return <div ref={containerRef} className="relative mt-10 h-[220px] overflow-hidden rounded-2xl border border-sky-100/35 bg-[#050b14] shadow-[0_24px_66px_rgba(0,0,0,.5),0_0_64px_rgba(56,189,248,.2)] sm:mt-14 sm:h-[300px] sm:rounded-3xl">
     <canvas ref={canvasRef} aria-hidden="true" className="absolute inset-0 block size-full touch-pan-y" />

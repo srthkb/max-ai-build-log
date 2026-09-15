@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default function ResearchPage() {
-  return <ArticleLayout eyebrow="[ 01 / RESEARCH ]" title="AI趋势与企业架构重塑" lead="从技术演进到商业落地，拆解未来5年企业如何拥抱 AI 原生架构。" visualLabel="DATA FLOW / AI-NATIVE ARCHITECTURE" visual={<AwakeningSignal text="AI趋势与企业架构重塑" topLabel="RESEARCH SIGNAL / PARTICLE TYPE" bottomLabel="DATA FLOW / AI-NATIVE ARCHITECTURE" sampleStep={4} alphaThreshold={150} particleSize={0.9} />}>
+  return <ArticleLayout eyebrow="[ 01 / RESEARCH ]" title="AI趋势与企业架构重塑" lead="从技术演进到商业落地，拆解未来5年企业如何拥抱 AI 原生架构。" visualLabel="DATA FLOW / AI-NATIVE ARCHITECTURE" visual={<AwakeningSignal text="AI趋势与企业架构重塑" topLabel="RESEARCH SIGNAL / PARTICLE TYPE" bottomLabel="DATA FLOW / AI-NATIVE ARCHITECTURE" sampleStep={3} alphaThreshold={90} particleSize={1.25} fontSize="clamp(3.4rem, 14vw, 9rem)" />}>
     <p className="mb-8 text-neutral-400">当前 AI 布局的核心优势，在于掌握打破“组织惯性”的主动权。当 AI 真正融入企业基因，决策效率、人才结构与创新试错空间都将发生质变。这不仅是一次技术的升级，更是一场生产关系的重塑。</p>
 
     <p className="mb-8 text-neutral-400">随着 Astra 等前沿模型的发布，许多前端建模与 UI 设计师已开始广泛应用，产出效果令人惊艳。然而，对于小型设计机构和个体创作者而言，目前 AI 并未呈现出明显的替代趋势。这证明：工具的平权并不意味着竞争的终结，真正的壁垒在于如何将工具转化为商业价值。</p>
