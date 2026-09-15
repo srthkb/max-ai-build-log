@@ -91,6 +91,7 @@ export default function AwakeningSignal({
     const pointer = { active: false, x: 0, y: 0, smoothX: 0, smoothY: 0 };
     const baseColor = hexToRgb("#e0f7ff");
     const highlightColor = hexToRgb("#38bdf8");
+    const boundedScatterDistance = (distance: number) => width <= 600 ? Math.min(distance, Math.min(width * 0.08, height * 0.18)) : distance;
 
     const render = (now: number) => {
       context.clearRect(0, 0, width, height);
@@ -107,7 +108,7 @@ export default function AwakeningSignal({
           particle.startX = particle.x;
           particle.startY = particle.y;
           const angle = particle.seed * Math.PI * 2 + Math.sin(particle.seed * 19) * 0.35;
-          const distance = 72 + particle.seed * 150;
+          const distance = boundedScatterDistance(72 + particle.seed * 150);
           particle.targetX = particle.x + Math.cos(angle) * distance;
           particle.targetY = particle.y + Math.sin(angle) * distance;
           particle.delay = particle.seed * 120;
@@ -253,7 +254,10 @@ export default function AwakeningSignal({
         targetSets.push(targets);
       }
       const particleCount = Math.min(1800, targetSets[0]?.length || 0);
-      targetSequence = targetSets.map((targets) => Array.from({ length: particleCount }, (_, index) => index < targets.length ? targets[Math.min(targets.length - 1, Math.floor((index / particleCount) * targets.length))] : null));
+      targetSequence = targetSets.map((targets) => {
+        const activeCount = Math.min(targets.length, particleCount);
+        return Array.from({ length: particleCount }, (_, index) => index < activeCount ? targets[Math.min(targets.length - 1, Math.floor((index / activeCount) * targets.length))] : null);
+      });
       const firstTargets = targetSequence[0] || [];
       const visualParticleScale = isMobileViewport ? 0.82 : 1;
       particles = firstTargets.map((target, index) => {
@@ -261,7 +265,7 @@ export default function AwakeningSignal({
         const seed = ((index * 9301 + 49297) % 233280) / 233280;
         const color = baseColor && highlightColor ? mixRgb(baseColor, highlightColor, clamp(target.x / Math.max(1, width) + (seed - 0.5) * 0.26, 0, 1)) : "#e0f7ff";
         const angle = seed * Math.PI * 2;
-        const distance = reducedMotion ? 0 : 160 * (0.42 + seed * 0.72);
+        const distance = reducedMotion ? 0 : boundedScatterDistance(160 * (0.42 + seed * 0.72));
         const startX = target.x + Math.cos(angle) * distance;
         const startY = target.y + Math.sin(angle) * distance;
         return { x: startX, y: startY, startX, startY, targetX: target.x, targetY: target.y, size: particleSize * visualParticleScale * (1.05 + seed * 0.42), color, seed, delay: seed * 360, visible: true };
