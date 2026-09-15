@@ -36,7 +36,7 @@ function resolveFontSize(value: string, container: HTMLElement, fontFamily: stri
   return size;
 }
 
-type Particle = { x: number; y: number; startX: number; startY: number; targetX: number; targetY: number; size: number; color: string; seed: number; delay: number };
+type Particle = { x: number; y: number; startX: number; startY: number; targetX: number; targetY: number; size: number; color: string; seed: number; delay: number; visible: boolean };
 
 type ParticleTextSignalProps = {
   text?: string;
@@ -47,6 +47,9 @@ type ParticleTextSignalProps = {
   particleSize?: number;
   fontSize?: string;
   framed?: boolean;
+  sequence?: string[];
+  sequenceSampleSteps?: number[];
+  sequenceAlphaThresholds?: number[];
 };
 
 /** Canvas particle text, replacing the previous 3D particle grid. */
@@ -59,6 +62,9 @@ export default function AwakeningSignal({
   particleSize = 1,
   fontSize: fontSizeValue = "clamp(2rem, 6vw, 4.8rem)",
   framed = true,
+  sequence,
+  sequenceSampleSteps,
+  sequenceAlphaThresholds,
 }: ParticleTextSignalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -70,11 +76,15 @@ export default function AwakeningSignal({
     if (!container || !canvas || !context) return;
 
     let particles: Particle[] = [];
+    const textSequence = sequence?.length ? sequence : [text];
     let animationFrame = 0;
     let resizeFrame = 0;
     let buildId = 0;
-    let gathering = false;
-    let gatherStart = 0;
+    let phase: "gather" | "hold" | "scatter" = "gather";
+    let phaseStart = 0;
+    let sequenceIndex = 0;
+    let pendingTargets: ({ x: number; y: number } | null)[] | null = null;
+    let targetSequence: ({ x: number; y: number } | null)[][] = [];
     let width = 0;
     let height = 0;
     let reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -82,38 +92,40 @@ export default function AwakeningSignal({
     const baseColor = hexToRgb("#e0f7ff");
     const highlightColor = hexToRgb("#38bdf8");
 
-    const startGather = (fromScatter: boolean) => {
-      if (!particles.length) return;
-      const now = performance.now();
-      for (const particle of particles) {
-        if (fromScatter && !reducedMotion) {
-          const angle = particle.seed * Math.PI * 2;
-          const distance = 160 * (0.42 + particle.seed * 0.72);
-          particle.x = particle.targetX + Math.cos(angle) * distance + (particle.seed - 0.5) * 100;
-          particle.y = particle.targetY + Math.sin(angle) * distance + (particle.seed - 0.5) * 82;
-        }
-        particle.startX = particle.x;
-        particle.startY = particle.y;
-        particle.delay = reducedMotion ? 0 : particle.seed * 360;
-      }
-      gatherStart = now;
-      gathering = !reducedMotion;
-    };
-
     const render = (now: number) => {
       context.clearRect(0, 0, width, height);
       pointer.smoothX += (pointer.x - pointer.smoothX) * 0.15;
       pointer.smoothY += (pointer.y - pointer.smoothY) * 0.15;
-      // Keep glyph edges crisp. A per-particle blur merged neighbouring Chinese strokes.
       context.shadowBlur = 0;
       let complete = true;
+      let activeProgress = 1;
+
+      if (phase === "hold" && textSequence.length > 1 && now - phaseStart >= 1000 && pendingTargets) {
+        phase = "scatter";
+        phaseStart = now;
+        for (const particle of particles) {
+          particle.startX = particle.x;
+          particle.startY = particle.y;
+          const angle = particle.seed * Math.PI * 2 + Math.sin(particle.seed * 19) * 0.35;
+          const distance = 72 + particle.seed * 150;
+          particle.targetX = particle.x + Math.cos(angle) * distance;
+          particle.targetY = particle.y + Math.sin(angle) * distance;
+          particle.delay = particle.seed * 120;
+        }
+      }
 
       for (const particle of particles) {
         let targetX = particle.targetX;
         let targetY = particle.targetY;
         let progress = 1;
-        if (gathering) {
-          progress = clamp((now - gatherStart - particle.delay) / 1280, 0, 1);
+        if (phase === "gather") {
+          progress = clamp((now - phaseStart - particle.delay) / 1200, 0, 1);
+          const eased = easeOutCubic(progress);
+          targetX = particle.startX + (particle.targetX - particle.startX) * eased;
+          targetY = particle.startY + (particle.targetY - particle.startY) * eased;
+          if (progress < 1) complete = false;
+        } else if (phase === "scatter") {
+          progress = clamp((now - phaseStart - particle.delay) / 900, 0, 1);
           const eased = easeOutCubic(progress);
           targetX = particle.startX + (particle.targetX - particle.startX) * eased;
           targetY = particle.startY + (particle.targetY - particle.startY) * eased;
@@ -133,18 +145,45 @@ export default function AwakeningSignal({
             targetY += (dy / distance) * force;
           }
         }
-        const follow = reducedMotion ? 1 : 0.2;
-        particle.x += (targetX - particle.x) * follow;
-        particle.y += (targetY - particle.y) * follow;
-        context.globalAlpha = clamp(0.32 + progress * 0.68, 0, 1);
-        context.fillStyle = particle.color;
-        context.beginPath();
-        context.arc(particle.x, particle.y, particle.size / 2, 0, Math.PI * 2);
-        context.fill();
+        if (phase === "gather" || phase === "scatter") {
+          particle.x = targetX;
+          particle.y = targetY;
+        } else {
+          const follow = reducedMotion ? 1 : 0.2;
+          particle.x += (targetX - particle.x) * follow;
+          particle.y += (targetY - particle.y) * follow;
+        }
+        activeProgress = Math.min(activeProgress, progress);
+        if (particle.visible) {
+          context.globalAlpha = phase === "scatter" ? clamp(1 - progress * 0.38, 0.48, 1) : clamp(0.32 + progress * 0.68, 0, 1);
+          context.fillStyle = particle.color;
+          context.beginPath();
+          context.arc(particle.x, particle.y, particle.size / 2, 0, Math.PI * 2);
+          context.fill();
+        }
       }
       context.globalAlpha = 1;
       context.shadowBlur = 0;
-      if (complete) gathering = false;
+      if (complete && phase === "scatter" && pendingTargets) {
+        for (const [index, particle] of particles.entries()) {
+          const target = pendingTargets[index % pendingTargets.length];
+          particle.startX = particle.x;
+          particle.startY = particle.y;
+          particle.targetX = target?.x ?? particle.x;
+          particle.targetY = target?.y ?? particle.y;
+          particle.visible = target !== null;
+          particle.delay = reducedMotion ? 0 : particle.seed * 180;
+        }
+        pendingTargets = null;
+        phase = "gather";
+        phaseStart = now;
+      } else if (complete && phase === "gather") {
+        phase = "hold";
+        phaseStart = now;
+        sequenceIndex = (sequenceIndex + 1) % textSequence.length;
+        pendingTargets = targetSequence[(sequenceIndex + 1) % textSequence.length] || null;
+      }
+      void activeProgress;
       animationFrame = window.requestAnimationFrame(render);
     };
 
@@ -154,67 +193,86 @@ export default function AwakeningSignal({
       width = Math.floor(rect.width);
       height = Math.floor(rect.height);
       if (width <= 0 || height <= 0) return;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const isMobileViewport = width <= 600;
+      const dpr = Math.min(window.devicePixelRatio || 1, isMobileViewport ? 2 : 2.25);
       canvas.width = Math.floor(width * dpr);
       canvas.height = Math.floor(height * dpr);
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       const fontFamily = window.getComputedStyle(container).fontFamily || "sans-serif";
-      let fontSize = resolveFontSize(fontSizeValue, container, fontFamily);
-      let font = `800 ${fontSize}px ${fontFamily}`;
       if (document.fonts) await document.fonts.ready;
       if (currentBuild !== buildId) return;
-      const offscreen = document.createElement("canvas");
-      const offContext = offscreen.getContext("2d", { willReadFrequently: true });
-      if (!offContext) return;
-      offContext.font = font;
-      const lines = text.split(/\r?\n/).filter(Boolean);
-      const maxTextWidth = width * 0.86;
-      const measureLines = () => lines.map((line) => offContext.measureText(line));
-      let lineMetrics = measureLines();
-      const initialWidth = Math.max(...lineMetrics.map((metrics) => metrics.width), 0);
-      if (initialWidth > maxTextWidth) {
-        fontSize = Math.max(22, fontSize * (maxTextWidth / initialWidth));
-        font = `800 ${fontSize}px ${fontFamily}`;
+      const targetSets: { x: number; y: number }[][] = [];
+      for (const [textIndex, textValue] of textSequence.entries()) {
+        let fontSize = resolveFontSize(fontSizeValue, container, fontFamily);
+        let font = `800 ${fontSize}px ${fontFamily}`;
+        const offscreen = document.createElement("canvas");
+        const offContext = offscreen.getContext("2d", { willReadFrequently: true });
+        if (!offContext) return;
         offContext.font = font;
-        lineMetrics = measureLines();
-      }
-      const textWidth = Math.ceil(Math.max(...lineMetrics.map((metrics) => metrics.width), 0));
-      const ascent = Math.ceil(Math.max(...lineMetrics.map((metrics) => metrics.actualBoundingBoxAscent || fontSize * 0.78), fontSize * 0.78));
-      const descent = Math.ceil(Math.max(...lineMetrics.map((metrics) => metrics.actualBoundingBoxDescent || fontSize * 0.22), fontSize * 0.22));
-      const lineHeight = Math.ceil(fontSize * 1.08);
-      const padding = Math.max(14, Math.ceil(fontSize * 0.11));
-      offscreen.width = textWidth + padding * 2;
-      offscreen.height = lineHeight * lines.length + padding * 2;
-      offContext.font = font;
-      offContext.fillStyle = "#fff";
-      offContext.textBaseline = "alphabetic";
-      lines.forEach((line, index) => {
-        const lineWidth = offContext.measureText(line).width;
-        offContext.fillText(line, padding + (textWidth - lineWidth) / 2, padding + ascent + index * lineHeight);
-      });
-
-      const pixels = offContext.getImageData(0, 0, offscreen.width, offscreen.height).data;
-      const targets: { x: number; y: number }[] = [];
-      for (let y = 0; y < offscreen.height; y += sampleStep) {
-        for (let x = 0; x < offscreen.width; x += sampleStep) {
-          if (pixels[(y * offscreen.width + x) * 4 + 3] > alphaThreshold) targets.push({ x: width / 2 - offscreen.width / 2 + x, y: height / 2 - offscreen.height / 2 + y });
+        const lines = textValue.split(/\r?\n/).filter(Boolean);
+        const maxTextWidth = width * 0.86;
+        const measureLines = () => lines.map((line) => offContext.measureText(line));
+        let lineMetrics = measureLines();
+        const initialWidth = Math.max(...lineMetrics.map((metrics) => metrics.width), 0);
+        if (initialWidth > maxTextWidth) {
+          fontSize = Math.max(22, fontSize * (maxTextWidth / initialWidth));
+          font = `800 ${fontSize}px ${fontFamily}`;
+          offContext.font = font;
+          lineMetrics = measureLines();
         }
+        const textWidth = Math.ceil(Math.max(...lineMetrics.map((metrics) => metrics.width), 0));
+        const ascent = Math.ceil(Math.max(...lineMetrics.map((metrics) => metrics.actualBoundingBoxAscent || fontSize * 0.78), fontSize * 0.78));
+        const lineHeight = Math.ceil(fontSize * 1.08);
+        const padding = Math.max(14, Math.ceil(fontSize * 0.11));
+        const logicalWidth = textWidth + padding * 2;
+        const logicalHeight = lineHeight * lines.length + padding * 2;
+        offscreen.width = Math.ceil(logicalWidth * dpr);
+        offscreen.height = Math.ceil(logicalHeight * dpr);
+        offContext.setTransform(dpr, 0, 0, dpr, 0, 0);
+        offContext.font = font;
+        offContext.fillStyle = "#fff";
+        offContext.textBaseline = "alphabetic";
+        lines.forEach((line, index) => {
+          const lineWidth = offContext.measureText(line).width;
+          offContext.fillText(line, padding + (textWidth - lineWidth) / 2, padding + ascent + index * lineHeight);
+        });
+        const pixels = offContext.getImageData(0, 0, offscreen.width, offscreen.height).data;
+        const targets: { x: number; y: number }[] = [];
+        const requestedSampleStep = sequenceSampleSteps?.[textIndex] ?? sampleStep;
+        const samplingGap = Math.max(2, Math.min(7, Math.round(requestedSampleStep + (isMobileViewport ? 1 : 0) + (fontSize > 72 ? 1 : 0))));
+        const pixelGap = samplingGap * dpr;
+        for (let y = 0; y < offscreen.height; y += pixelGap) {
+          for (let x = 0; x < offscreen.width; x += pixelGap) {
+            const pixelX = Math.floor(x);
+            const pixelY = Math.floor(y);
+            const threshold = sequenceAlphaThresholds?.[textIndex] ?? alphaThreshold;
+            if (pixels[(pixelY * offscreen.width + pixelX) * 4 + 3] > threshold) targets.push({ x: width / 2 - logicalWidth / 2 + x / dpr, y: height / 2 - logicalHeight / 2 + y / dpr });
+          }
+        }
+        targetSets.push(targets);
       }
-      const maxParticles = Math.max(1100, Math.min(3600, Math.floor((width * height) / 78)));
-      const stride = Math.max(1, Math.ceil(targets.length / maxParticles));
-      particles = targets.filter((_, index) => index % stride === 0).map((target, index) => {
+      const particleCount = Math.min(1800, targetSets[0]?.length || 0);
+      targetSequence = targetSets.map((targets) => Array.from({ length: particleCount }, (_, index) => index < targets.length ? targets[Math.min(targets.length - 1, Math.floor((index / particleCount) * targets.length))] : null));
+      const firstTargets = targetSequence[0] || [];
+      const visualParticleScale = isMobileViewport ? 0.82 : 1;
+      particles = firstTargets.map((target, index) => {
+        if (!target) return null;
         const seed = ((index * 9301 + 49297) % 233280) / 233280;
         const color = baseColor && highlightColor ? mixRgb(baseColor, highlightColor, clamp(target.x / Math.max(1, width) + (seed - 0.5) * 0.26, 0, 1)) : "#e0f7ff";
         const angle = seed * Math.PI * 2;
         const distance = reducedMotion ? 0 : 160 * (0.42 + seed * 0.72);
-        return { x: target.x + Math.cos(angle) * distance, y: target.y + Math.sin(angle) * distance, startX: target.x, startY: target.y, targetX: target.x, targetY: target.y, size: particleSize * (1.05 + seed * 0.42), color, seed, delay: seed * 360 };
-      });
+        const startX = target.x + Math.cos(angle) * distance;
+        const startY = target.y + Math.sin(angle) * distance;
+        return { x: startX, y: startY, startX, startY, targetX: target.x, targetY: target.y, size: particleSize * visualParticleScale * (1.05 + seed * 0.42), color, seed, delay: seed * 360, visible: true };
+      }).filter((particle): particle is Particle => particle !== null);
+      pendingTargets = targetSequence[1] || null;
       pointer.x = width / 2;
       pointer.y = height / 2;
       pointer.smoothX = pointer.x;
       pointer.smoothY = pointer.y;
-      startGather(false);
+      phase = reducedMotion ? "hold" : "gather";
+      phaseStart = performance.now();
     };
 
     const handlePointerMove = (event: PointerEvent) => {
@@ -248,7 +306,7 @@ export default function AwakeningSignal({
       window.cancelAnimationFrame(animationFrame);
       window.cancelAnimationFrame(resizeFrame);
     };
-  }, [alphaThreshold, fontSizeValue, particleSize, sampleStep, text]);
+  }, [alphaThreshold, fontSizeValue, particleSize, sampleStep, text, sequence, sequenceAlphaThresholds, sequenceSampleSteps]);
 
   return <div ref={containerRef} className={framed ? "relative mt-10 h-[220px] overflow-hidden rounded-2xl border border-sky-100/35 bg-[#050b14] shadow-[0_24px_66px_rgba(0,0,0,.5),0_0_64px_rgba(56,189,248,.2)] sm:mt-14 sm:h-[300px] sm:rounded-3xl" : "relative h-[clamp(14rem,40vw,25rem)] overflow-hidden"}>
     <canvas ref={canvasRef} aria-hidden="true" className="absolute inset-0 block size-full touch-pan-y" />

@@ -19,20 +19,20 @@ const paths = [
   },
   {
     number: "02",
-    title: "BUILD",
-    translation: "构建",
-    subtitle: "Turn ideas into real things.",
-    detail: "AI WEBSITES / MVP / BUILD LOG / FROM IDEA TO LAUNCH",
-    href: "/build",
-    layout: "lg:ml-[9%] lg:mr-[8%]",
-  },
-  {
-    number: "03",
     title: "TOOLS",
     translation: "工具",
     subtitle: "Understand the tools behind the work.",
     detail: "CODEX / CHATGPT / CLAUDE / DESIGN / AUTOMATION",
     href: "/tools",
+    layout: "lg:ml-[9%] lg:mr-[8%]",
+  },
+  {
+    number: "03",
+    title: "BUILD",
+    translation: "构建",
+    subtitle: "Turn ideas into real things.",
+    detail: "AI WEBSITES / MVP / BUILD LOG / FROM IDEA TO LAUNCH",
+    href: "/build",
     layout: "lg:ml-[21%]",
   },
 ];
@@ -48,7 +48,8 @@ export default function StartHerePage() {
       <div className="flex flex-col justify-between gap-8 border-b border-sky-100/15 pb-10 md:flex-row md:items-end md:gap-12 md:pb-14">
         <div>
           <h1 className="max-w-3xl text-[clamp(3.7rem,17vw,8rem)] font-semibold leading-[.8] tracking-[-.08em] text-white">START<br /><span className="text-sky-200/85">HERE</span></h1>
-          <p className="mt-7 max-w-lg text-base leading-relaxed text-sky-50/65 sm:text-lg">Choose where you want to begin.</p>
+          <p className="mt-7 max-w-lg text-base leading-relaxed text-sky-50/65 sm:text-lg">想从哪开始？</p>
+          <p className="mt-2 max-w-lg text-base leading-relaxed text-sky-50/65 sm:text-lg">Choose where you want to begin.</p>
         </div>
         <p className="max-w-xs text-[10px] leading-relaxed tracking-[.15em] text-sky-200/60 md:text-right">SYSTEM ENTRY / THREE PATHS / ONE NEXT STEP</p>
       </div>

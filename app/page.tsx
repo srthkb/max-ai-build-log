@@ -88,7 +88,6 @@ export default function Home() {
             <div className="flex w-full flex-col gap-2.5 sm:w-auto sm:flex-row sm:flex-wrap sm:gap-3"><Link href="/start-here" className="group inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-[11px] font-semibold tracking-[.08em] text-[#0b0c10] transition hover:scale-[1.03] hover:shadow-[0_0_30px_rgba(255,255,255,.5)]">START HERE 开始入门 <ArrowDownRight size={15} className="transition group-hover:translate-y-0.5" /></Link><Link href="/contact" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/55 bg-black/10 px-5 py-3 text-[11px] font-semibold tracking-[.08em] text-white backdrop-blur-sm transition hover:scale-[1.03] hover:bg-white/15 hover:shadow-[0_0_28px_rgba(255,255,255,.22)]">联系我 <ArrowUpRight size={15} /></Link></div>
           </div>
         </div>
-        <div className="absolute bottom-7 right-12 z-10 hidden text-[9px] tracking-[.18em] text-white/65 md:block">SCROLL TO EXPLORE ↓</div>
       </section>
 
       <section id="skills" className="skill-atlas-section relative px-5 py-20 md:px-12 md:py-36"><div className="blue-haze" /><div className="relative mx-auto max-w-7xl"><SectionHeader index="02" title="SKILL ATLAS" copy="A living system of what I’m learning and applying." /><ScrollReveal delay={0.08} onReveal={() => setSkillsRevealed(true)}><SkillAtlas skills={learningCards} notes={notes} onSave={saveNote} onOpen={(href) => router.push(href)} revealed={skillsRevealed} /></ScrollReveal></div></section>
