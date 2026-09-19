@@ -283,9 +283,9 @@ export default function ToolsPage() {
                 onPointerEnter={() => setPreviewedId(tool.id)}
                 onFocusCapture={() => setPreviewedId(tool.id)}
               >
-                <a href={tool.href} target="_blank" rel="noreferrer" className="tool-showcase-media" aria-label={`查看 ${tool.title} 的展示预览`}>
+                <div className="tool-showcase-media" role="img" aria-label={`${tool.title} 的动态展示预览，点击下方 VISIT 访问网站`}>
                   <ToolShowcaseMedia tool={tool} />
-                </a>
+                </div>
                 <div className="p-3">
                   <div className="flex items-start gap-2.5">
                     <span className="pt-0.5 text-[9px] tracking-[.18em] text-sky-300">{tool.id}</span>
