@@ -40,6 +40,146 @@ body { margin: 0; min-width: 320px; overflow-x: hidden; background: var(--bg-dar
   background-size: 52px 52px, 52px 52px, 26px 26px;
   mask-image: linear-gradient(to bottom, transparent, black 17%, black 84%, transparent);
 }
+.tool-showcase-rail {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 2px 0 12px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.tool-showcase-rail::-webkit-scrollbar { display: none; }
+.tool-showcase-card {
+  flex: 0 0 max(204px, calc((100% - 48px) / 5));
+  overflow: hidden;
+  scroll-snap-align: start;
+  transition-property: transform, border-color, background-color, box-shadow;
+  transition-duration: 200ms;
+  transition-timing-function: var(--ease-out);
+}
+.tool-showcase-card__title,
+.tool-showcase-media__content,
+.tool-showcase-media__frame {
+  transition-timing-function: var(--ease-out);
+}
+.tool-showcase-card__title { transition-property: transform; transition-duration: 200ms; }
+.tool-showcase-media {
+  position: relative;
+  display: block;
+  height: 124px;
+  overflow: hidden;
+  background: #060b12;
+  border-bottom: 1px solid rgba(var(--mono-cyan-rgb), .12);
+}
+.tool-showcase-media__content {
+  display: block;
+  width: 100%;
+  /* Extra media height prevents the preview window from exposing its dark base while it pans. */
+  height: 160%;
+  object-fit: cover;
+  opacity: .82;
+  transform: translate3d(0, 0, 0) scale(1.01);
+  transition-property: transform, opacity;
+  transition-duration: 200ms;
+}
+.shader-gradient-preview {
+  --shader-x: 55%;
+  --shader-y: 46%;
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  background: #06101a;
+  isolation: isolate;
+}
+.shader-gradient-preview::before {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(2, 7, 16, .42), transparent 48%, rgba(2, 7, 16, .38));
+}
+.shader-gradient-preview__layer {
+  position: absolute;
+  inset: -28%;
+  background:
+    radial-gradient(circle at var(--shader-x) var(--shader-y), rgba(170, 238, 255, .92) 0 3%, rgba(72, 201, 255, .75) 16%, transparent 43%),
+    radial-gradient(circle at 72% 28%, rgba(60, 102, 255, .76), transparent 38%),
+    radial-gradient(circle at 26% 72%, rgba(28, 132, 214, .72), transparent 38%),
+    linear-gradient(125deg, #071833 0%, #0d3e76 46%, #071321 100%);
+  filter: saturate(1.2) blur(10px);
+  transform: translate3d(0, 0, 0) scale(1.08);
+  transition: background 180ms var(--ease-out);
+  will-change: transform;
+  animation: shader-gradient-breathe 6s var(--ease-in-out) infinite alternate;
+}
+.shader-gradient-preview__label {
+  position: absolute;
+  z-index: 2;
+  left: 12px;
+  bottom: 10px;
+  font-size: 8px;
+  letter-spacing: .2em;
+  color: rgba(235, 250, 255, .72);
+  pointer-events: none;
+}
+.tool-showcase-media__frame {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 357.143%;
+  /* The iframe is deliberately taller than its clipped viewport so its internal page can pan down. */
+  height: 1200%;
+  border: 0;
+  pointer-events: none;
+  transform: translate3d(0, 0, 0) scale(.28);
+  transform-origin: top left;
+  transition-property: transform, opacity;
+  transition-duration: 200ms;
+}
+@media (hover: hover) and (pointer: fine) {
+  .tool-showcase-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(var(--mono-cyan-rgb), .45);
+    background-color: rgba(var(--mono-cyan-rgb), .055);
+    box-shadow: 0 18px 38px rgba(0, 0, 0, .28);
+  }
+  .tool-showcase-card:hover .tool-showcase-card__title { transform: translateX(2px); }
+  .tool-showcase-card:hover .tool-showcase-media__content,
+  .tool-showcase-card.is-previewed .tool-showcase-media__content { transform: translate3d(0, var(--tool-preview-offset), 0) scale(1.05); opacity: 1; }
+  .tool-showcase-card:hover .tool-showcase-media__frame,
+  .tool-showcase-card.is-previewed .tool-showcase-media__frame { transform: translate3d(0, var(--tool-preview-offset), 0) scale(.292); }
+}
+@media (max-width: 640px), (hover: none) {
+  .tool-showcase-media__content { animation: tool-preview-drift 3.6s var(--ease-in-out) forwards; }
+  .tool-showcase-media__frame { animation: tool-preview-frame-drift 3.6s var(--ease-in-out) forwards; }
+}
+@keyframes tool-preview-drift {
+  from { transform: translate3d(0, 0, 0) scale(1.01); opacity: .84; }
+  to { transform: translate3d(0, var(--tool-preview-offset), 0) scale(1.05); opacity: 1; }
+}
+@keyframes tool-preview-frame-drift {
+  from { transform: translate3d(0, 0, 0) scale(.28); }
+  to { transform: translate3d(0, var(--tool-preview-offset), 0) scale(.292); }
+}
+@keyframes shader-gradient-breathe {
+  from { transform: translate3d(-2%, 2%, 0) scale(1.08) rotate(-2deg); }
+  to { transform: translate3d(2%, -2%, 0) scale(1.13) rotate(2deg); }
+}
+@media (max-width: 640px) {
+  .tool-showcase-card { flex-basis: min(78vw, 300px); }
+  .tool-showcase-media { height: 154px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tool-showcase-media__content,
+  .tool-showcase-media__frame,
+  .shader-gradient-preview__layer { animation: none; }
+  .tool-showcase-card,
+  .tool-showcase-card__title,
+  .tool-showcase-media__content,
+  .tool-showcase-media__frame { transition-duration: 0ms; }
+}
 .skill-atlas-section {
   isolation: isolate;
   background:
