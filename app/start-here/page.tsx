@@ -55,7 +55,7 @@ export default function StartHerePage() {
       </div>
 
       <nav aria-label="Start paths" className="mt-3 flex flex-1 flex-col justify-center md:mt-6">
-        {paths.map((path) => <Link key={path.number} href={path.href} className={`group relative block border-t border-sky-100/15 py-8 transition-[background-color,border-color] duration-200 hover:border-sky-100/55 hover:bg-sky-100/[.035] sm:py-10 md:py-12 ${path.layout}`}>
+        {paths.map((path) => <Link key={path.number} href={path.href} prefetch={false} className={`group relative block border-t border-sky-100/15 py-8 transition-[background-color,border-color] duration-200 hover:border-sky-100/55 hover:bg-sky-100/[.035] sm:py-10 md:py-12 ${path.layout}`}>
           <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-start gap-3 sm:grid-cols-[4.5rem_minmax(0,1fr)_auto] sm:gap-6 md:gap-8">
             <span className="pt-2 text-[10px] tracking-[.18em] text-sky-300">{path.number}</span>
             <div className="min-w-0">
