@@ -13,6 +13,8 @@ export type Skill = LearningCard;
 
 export type Note = { text: string; updatedAt: string };
 
+const CARD_TITLE_FONT = "/fonts/NotoSansCJKsc-Regular.otf";
+
 type Props = {
   skills: Skill[];
   notes: Record<string, Note>;
@@ -321,7 +323,7 @@ function TypewriterCardTitle({ text, active }: { text: string; active: boolean }
     }
   });
 
-  return <Text ref={title} position={[-0.81, 0.37, 0.1]} anchorX="left" maxWidth={1.6} fontSize={0.245} lineHeight={0.98} color="#f3fbff">{""}</Text>;
+  return <Text ref={title} font={CARD_TITLE_FONT} position={[-0.81, 0.37, 0.1]} anchorX="left" maxWidth={1.6} fontSize={0.245} lineHeight={0.98} color="#f3fbff">{""}</Text>;
 }
 
 function CardHud({ active }: { active: boolean }) {
