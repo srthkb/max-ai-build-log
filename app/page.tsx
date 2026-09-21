@@ -3,7 +3,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowDownRight, ArrowUpRight, Menu, X } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useState } from "react";
 import FolderAtlas from "./components/FolderAtlas";
 import { learningCards } from "./data/learningCards";
@@ -14,7 +13,6 @@ import SplitText from "./components/SplitText";
 const links = ["Skills", "Build log", "Projects", "About"];
 
 export default function Home() {
-  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [skillsRevealed, setSkillsRevealed] = useState(false);
@@ -73,7 +71,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="skills" className="skill-atlas-section relative px-5 py-20 md:px-12 md:py-36"><div className="blue-haze" /><div className="relative mx-auto max-w-7xl"><SectionHeader index="02" title="SKILL ATLAS" copy="A living system of what I’m learning and applying." /><ScrollReveal delay={0.08} onReveal={() => setSkillsRevealed(true)}><FolderAtlas skills={learningCards} onOpen={(href) => router.push(href)} revealed={skillsRevealed} /></ScrollReveal></div></section>
+      <section id="skills" className="skill-atlas-section relative px-5 py-20 md:px-12 md:py-36"><div className="blue-haze" /><div className="relative mx-auto max-w-7xl"><SectionHeader index="02" title="SKILL ATLAS" copy="A living system of what I’m learning and applying." /><ScrollReveal delay={0.08} onReveal={() => setSkillsRevealed(true)}><FolderAtlas skills={learningCards} revealed={skillsRevealed} /></ScrollReveal></div></section>
 
       <section id="build-log" className="border-y border-sky-100/10 bg-[#050d18]/82 px-5 py-20 backdrop-blur-sm sm:px-6 md:px-12 md:py-36"><div className="mx-auto max-w-7xl"><SectionHeader index="03" title="BUILD LOG" copy="Not just notes. Evidence of progress." /><div className="mt-10 grid border-t border-sky-100/15 sm:mt-12 lg:grid-cols-2"><article className="flex min-h-72 flex-col justify-between border-b border-sky-100/15 py-8 lg:min-h-80 lg:border-b-0 lg:border-r lg:py-9 lg:pr-12"><TextReveal text="SEPT / 2026" className="text-[10px] tracking-[.18em] text-sky-300" /><h2 className="text-3xl font-medium leading-[.9] tracking-[-.07em] sm:text-4xl md:text-6xl"><TextReveal tag="span" text="Building a personal" /><br /><TextReveal tag="span" text="AI learning archive." className="text-sky-300" /></h2><TextReveal tag="span" text="FIRST SIGNAL →" className="text-[11px] tracking-[.12em]" /></article><ol className="divide-y divide-sky-100/15 lg:pl-12"><LogItem delay={0.12} date="09.13" title="Site / v1.0" copy="重构为一套具备空间感与动态层次的 AI 学习档案。" /><LogItem delay={0.2} date="NEXT" title="Next protocol" copy="记录下一次真正改变工作方式的实验。" /><LogItem delay={0.28} date="OPEN" title="Open slot" copy="Keep learning. Keep building." /></ol></div></div></section>
 

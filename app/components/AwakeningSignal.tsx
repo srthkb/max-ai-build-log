@@ -87,7 +87,9 @@ export default function AwakeningSignal({
     let targetSequence: ({ x: number; y: number } | null)[][] = [];
     let width = 0;
     let height = 0;
+    let isMobileViewport = false;
     let reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const supportsPointerInteraction = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
     const pointer = { active: false, x: 0, y: 0, smoothX: 0, smoothY: 0 };
     const baseColor = hexToRgb("#e0f7ff");
     const highlightColor = hexToRgb("#38bdf8");
@@ -133,8 +135,11 @@ export default function AwakeningSignal({
           if (progress < 1) complete = false;
         } else if (!reducedMotion) {
           const driftTime = now * 0.001;
-          targetX += Math.sin(driftTime * 0.86 + particle.seed * 13) * 0.62;
-          targetY += Math.cos(driftTime * 0.7 + particle.seed * 11) * 0.56;
+          // On a narrow screen, even a small drift can merge adjacent glyph strokes.
+          // Keep the field alive while preserving the exact sampled character outline.
+          const drift = isMobileViewport ? 0.18 : 0.62;
+          targetX += Math.sin(driftTime * 0.86 + particle.seed * 13) * drift;
+          targetY += Math.cos(driftTime * 0.7 + particle.seed * 11) * drift;
         }
         if (pointer.active && !reducedMotion) {
           const dx = targetX - pointer.smoothX;
@@ -194,7 +199,7 @@ export default function AwakeningSignal({
       width = Math.floor(rect.width);
       height = Math.floor(rect.height);
       if (width <= 0 || height <= 0) return;
-      const isMobileViewport = width <= 600;
+      isMobileViewport = width <= 600;
       const dpr = Math.min(window.devicePixelRatio || 1, isMobileViewport ? 2 : 2.25);
       canvas.width = Math.floor(width * dpr);
       canvas.height = Math.floor(height * dpr);
@@ -241,19 +246,22 @@ export default function AwakeningSignal({
         const pixels = offContext.getImageData(0, 0, offscreen.width, offscreen.height).data;
         const targets: { x: number; y: number }[] = [];
         const requestedSampleStep = sequenceSampleSteps?.[textIndex] ?? sampleStep;
-        const samplingGap = Math.max(2, Math.min(7, Math.round(requestedSampleStep + (isMobileViewport ? 1 : 0) + (fontSize > 72 ? 1 : 0))));
+        // DPR improves the sampling resolution; it must not make visible particles
+        // farther apart. Mobile gets a denser sample using the same small particle size.
+        const samplingGap = Math.max(2, Math.min(7, Math.round(requestedSampleStep + (fontSize > 86 ? 1 : 0) - (isMobileViewport ? 1 : 0))));
         const pixelGap = samplingGap * dpr;
         for (let y = 0; y < offscreen.height; y += pixelGap) {
           for (let x = 0; x < offscreen.width; x += pixelGap) {
             const pixelX = Math.floor(x);
             const pixelY = Math.floor(y);
-            const threshold = sequenceAlphaThresholds?.[textIndex] ?? alphaThreshold;
+            const requestedThreshold = sequenceAlphaThresholds?.[textIndex] ?? alphaThreshold;
+            const threshold = isMobileViewport ? Math.min(requestedThreshold, 48) : requestedThreshold;
             if (pixels[(pixelY * offscreen.width + pixelX) * 4 + 3] > threshold) targets.push({ x: width / 2 - logicalWidth / 2 + x / dpr, y: height / 2 - logicalHeight / 2 + y / dpr });
           }
         }
         targetSets.push(targets);
       }
-      const particleCount = Math.min(1800, targetSets[0]?.length || 0);
+      const particleCount = Math.min(isMobileViewport ? 2200 : 1800, targetSets[0]?.length || 0);
       targetSequence = targetSets.map((targets) => {
         const activeCount = Math.min(targets.length, particleCount);
         return Array.from({ length: particleCount }, (_, index) => index < activeCount ? targets[Math.min(targets.length - 1, Math.floor((index / activeCount) * targets.length))] : null);
@@ -280,6 +288,7 @@ export default function AwakeningSignal({
     };
 
     const handlePointerMove = (event: PointerEvent) => {
+      if (!supportsPointerInteraction) return;
       const rect = canvas.getBoundingClientRect();
       pointer.x = event.clientX - rect.left;
       pointer.y = event.clientY - rect.top;
@@ -293,9 +302,11 @@ export default function AwakeningSignal({
     };
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     mediaQuery.addEventListener("change", handleReducedMotion);
-    canvas.addEventListener("pointermove", handlePointerMove);
-    canvas.addEventListener("pointerenter", handlePointerMove);
-    canvas.addEventListener("pointerleave", handlePointerLeave);
+    if (supportsPointerInteraction) {
+      canvas.addEventListener("pointermove", handlePointerMove);
+      canvas.addEventListener("pointerenter", handlePointerMove);
+      canvas.addEventListener("pointerleave", handlePointerLeave);
+    }
     const observer = new ResizeObserver(queueSample);
     observer.observe(container);
     void sampleText();
@@ -304,9 +315,11 @@ export default function AwakeningSignal({
       buildId += 1;
       observer.disconnect();
       mediaQuery.removeEventListener("change", handleReducedMotion);
-      canvas.removeEventListener("pointermove", handlePointerMove);
-      canvas.removeEventListener("pointerenter", handlePointerMove);
-      canvas.removeEventListener("pointerleave", handlePointerLeave);
+      if (supportsPointerInteraction) {
+        canvas.removeEventListener("pointermove", handlePointerMove);
+        canvas.removeEventListener("pointerenter", handlePointerMove);
+        canvas.removeEventListener("pointerleave", handlePointerLeave);
+      }
       window.cancelAnimationFrame(animationFrame);
       window.cancelAnimationFrame(resizeFrame);
     };
