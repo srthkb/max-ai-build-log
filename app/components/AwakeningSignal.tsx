@@ -90,7 +90,7 @@ export default function AwakeningSignal({
     let isMobileViewport = false;
     let reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const supportsPointerInteraction = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-    const pointer = { active: false, x: 0, y: 0, smoothX: 0, smoothY: 0 };
+    const pointer = { active: false, x: 0, y: 0, smoothX: 0, smoothY: 0, strength: 0 };
     const baseColor = hexToRgb("#e0f7ff");
     const highlightColor = hexToRgb("#38bdf8");
     const boundedScatterDistance = (distance: number) => width <= 600 ? Math.min(distance, Math.min(width * 0.08, height * 0.18)) : distance;
@@ -146,7 +146,7 @@ export default function AwakeningSignal({
           const dy = targetY - pointer.smoothY;
           const distance = Math.hypot(dx, dy);
           if (distance > 0.01 && distance < 126) {
-            const force = (1 - distance / 126) ** 2 * 38;
+            const force = (1 - distance / 126) ** 2 * pointer.strength;
             targetX += (dx / distance) * force;
             targetY += (dy / distance) * force;
           }
@@ -288,13 +288,17 @@ export default function AwakeningSignal({
     };
 
     const handlePointerMove = (event: PointerEvent) => {
-      if (!supportsPointerInteraction) return;
+      const isTouch = event.pointerType === "touch";
+      if (!isTouch && !supportsPointerInteraction) return;
       const rect = canvas.getBoundingClientRect();
       pointer.x = event.clientX - rect.left;
       pointer.y = event.clientY - rect.top;
+      // Touch gets a visible but gentler response, so scrolling over the canvas
+      // cannot tear apart the sampled letterforms.
+      pointer.strength = isTouch ? 20 : 38;
       pointer.active = true;
     };
-    const handlePointerLeave = () => { pointer.active = false; };
+    const handlePointerEnd = () => { pointer.active = false; pointer.strength = 0; };
     const handleReducedMotion = (event: MediaQueryListEvent) => { reducedMotion = event.matches; void sampleText(); };
     const queueSample = () => {
       window.cancelAnimationFrame(resizeFrame);
@@ -302,11 +306,13 @@ export default function AwakeningSignal({
     };
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     mediaQuery.addEventListener("change", handleReducedMotion);
+    canvas.addEventListener("pointermove", handlePointerMove);
     if (supportsPointerInteraction) {
-      canvas.addEventListener("pointermove", handlePointerMove);
       canvas.addEventListener("pointerenter", handlePointerMove);
-      canvas.addEventListener("pointerleave", handlePointerLeave);
     }
+    canvas.addEventListener("pointerleave", handlePointerEnd);
+    canvas.addEventListener("pointerup", handlePointerEnd);
+    canvas.addEventListener("pointercancel", handlePointerEnd);
     const observer = new ResizeObserver(queueSample);
     observer.observe(container);
     void sampleText();
@@ -315,18 +321,20 @@ export default function AwakeningSignal({
       buildId += 1;
       observer.disconnect();
       mediaQuery.removeEventListener("change", handleReducedMotion);
+      canvas.removeEventListener("pointermove", handlePointerMove);
       if (supportsPointerInteraction) {
-        canvas.removeEventListener("pointermove", handlePointerMove);
         canvas.removeEventListener("pointerenter", handlePointerMove);
-        canvas.removeEventListener("pointerleave", handlePointerLeave);
       }
+      canvas.removeEventListener("pointerleave", handlePointerEnd);
+      canvas.removeEventListener("pointerup", handlePointerEnd);
+      canvas.removeEventListener("pointercancel", handlePointerEnd);
       window.cancelAnimationFrame(animationFrame);
       window.cancelAnimationFrame(resizeFrame);
     };
   }, [alphaThreshold, fontSizeValue, particleSize, sampleStep, text, sequence, sequenceAlphaThresholds, sequenceSampleSteps]);
 
   return <div ref={containerRef} className={framed ? "relative mt-10 h-[220px] overflow-hidden rounded-2xl border border-sky-100/35 bg-[#050b14] shadow-[0_24px_66px_rgba(0,0,0,.5),0_0_64px_rgba(56,189,248,.2)] sm:mt-14 sm:h-[300px] sm:rounded-3xl" : "relative h-[clamp(14rem,40vw,25rem)] overflow-hidden"}>
-    <canvas ref={canvasRef} aria-hidden="true" className="absolute inset-0 block size-full touch-pan-y" />
+    <canvas ref={canvasRef} aria-hidden="true" className="absolute inset-0 block size-full touch-none" />
     {framed && <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,rgba(56,189,248,.08),transparent_48%),linear-gradient(90deg,rgba(3,9,18,.5),transparent_24%,transparent_76%,rgba(3,9,18,.5))]" />}
     {framed && <><p className="pointer-events-none absolute left-5 top-5 text-[9px] font-medium tracking-[.18em] text-sky-50/85 sm:left-7 sm:top-6 sm:text-[10px] sm:tracking-[.24em]">{topLabel}</p><p className="pointer-events-none absolute bottom-5 left-5 text-[9px] font-medium tracking-[.15em] text-sky-100/80 sm:bottom-6 sm:left-7 sm:text-[10px] sm:tracking-[.22em]">{bottomLabel}</p></>}
     <span className="sr-only">{text}</span>
