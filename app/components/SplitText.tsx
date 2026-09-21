@@ -107,5 +107,6 @@ export default function SplitText({
   }, { dependencies: [text, delay, duration, ease, splitType, JSON.stringify(from), JSON.stringify(to), threshold, rootMargin, fontsLoaded], scope: ref });
 
   const Tag = tag;
-  return <Tag ref={ref as never} className={`split-parent ${className}`.trim()} style={{ textAlign, overflow: allowOverflow ? "visible" : "hidden", display: "inline-block", whiteSpace: "normal", wordWrap: "break-word", willChange: "transform, opacity" }}>{text}</Tag>;
+  const inline = tag === "span";
+  return <Tag ref={ref as never} className={`split-parent ${className}`.trim()} style={{ textAlign, overflow: allowOverflow ? "visible" : "hidden", display: inline ? "inline-block" : "block", width: inline ? undefined : "100%", whiteSpace: "normal", wordWrap: "break-word", willChange: "transform, opacity" }}>{text}</Tag>;
 }

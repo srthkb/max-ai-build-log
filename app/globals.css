@@ -145,3 +145,84 @@ body { margin: 0; min-width: 320px; overflow-x: hidden; background: var(--bg-dar
   .masked-quote::before { background-size: 30px 30px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; scroll-behavior: auto !important; } .skill-carousel-shell::after { opacity: .5; } }
+
+/* Folder Atlas — a tactile replacement for the former 3D card carousel. */
+.folder-atlas { --folder-ink: #071a2a; --folder-back: #0a2135; --folder-front: #103652; --folder-paper: #f5fbff; --folder-line: rgba(197, 234, 255, .26); isolation: isolate; }
+.folder-atlas__board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; overflow: hidden; border: 1px solid var(--folder-line); background: var(--folder-line); box-shadow: 0 36px 90px rgba(0, 0, 0, .48); }
+.folder-atlas__cell { position: relative; min-height: 328px; overflow: hidden; background: linear-gradient(145deg, rgba(13, 35, 55, .92), rgba(2, 10, 19, .94)); }
+.folder-atlas__cell::before { position: absolute; inset: 0; content: ""; pointer-events: none; opacity: .42; background-image: linear-gradient(rgba(var(--mono-cyan-rgb), .075) 1px, transparent 1px), linear-gradient(90deg, rgba(var(--mono-cyan-rgb), .075) 1px, transparent 1px); background-size: 32px 32px; mask-image: linear-gradient(to bottom, transparent, black 30%, transparent); }
+.folder-atlas__cell::after { position: absolute; right: -15%; bottom: -50%; width: 70%; height: 70%; content: ""; pointer-events: none; background: rgba(var(--mono-cyan-rgb), .14); filter: blur(56px); }
+.folder-atlas__documents { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.folder-atlas__document { --folder-x: 0px; --folder-y: 0px; --folder-r: 0deg; position: absolute; top: 64px; left: 50%; z-index: 1; display: flex; width: min(74%, 268px); min-height: 56px; flex-direction: column; justify-content: center; gap: 5px; padding: 10px 14px; border: 0; border-radius: 8px; background: var(--folder-paper); color: #0b1a29; box-shadow: 0 14px 28px rgba(0, 0, 0, .28); cursor: pointer; opacity: 0; pointer-events: none; text-align: left; transform: translate3d(calc(-50% + var(--folder-x)), calc(122px + var(--folder-y)), 0) rotate(var(--folder-r)) scale(.95); transform-origin: 50% 100%; transition: opacity 160ms ease, transform 360ms var(--ease-out); -webkit-tap-highlight-color: transparent; }
+.folder-atlas__document:nth-child(2) { top: 118px; width: min(56%, 198px); }
+.folder-atlas__document span { font-size: 8px; font-weight: 700; letter-spacing: .14em; opacity: .52; }
+.folder-atlas__document strong { overflow: hidden; font-size: 12px; font-weight: 600; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+.folder-atlas__cell[data-open="true"] .folder-atlas__document { opacity: 1; pointer-events: auto; transform: translate3d(calc(-50% + var(--folder-x)), calc(var(--folder-y)), 0) rotate(var(--folder-r)) scale(1); transition-delay: calc(var(--folder-index) * 52ms); }
+.folder-atlas__document[data-active="true"] { transform: translate3d(calc(-50% + var(--folder-x)), calc(var(--folder-y) - 2px), 0) rotate(var(--folder-r)) scale(.97) !important; }
+.folder-atlas__folder { position: absolute; right: 10%; bottom: 30px; left: 10%; z-index: 3; height: 156px; margin: 0; padding: 0; border: 0; background: transparent; cursor: pointer; perspective: 760px; -webkit-tap-highlight-color: transparent; }
+.folder-atlas__back { position: absolute; inset: 0; border-radius: 14px; background: linear-gradient(160deg, #17496c, var(--folder-back) 64%); box-shadow: 0 24px 34px rgba(0, 0, 0, .42), inset 0 1px 0 rgba(214, 244, 255, .24); transform: rotateX(8deg); transform-origin: center bottom; }
+.folder-atlas__back::before { position: absolute; top: -14px; left: 0; width: 42%; height: 30px; border-radius: 14px 14px 0 0; background: inherit; content: ""; }
+.folder-atlas__paper { position: absolute; top: 16px; right: 8%; left: 8%; height: 54%; border-radius: 7px; background: linear-gradient(150deg, #e9f7ff, #a6dfff); opacity: 0; transform: translateY(13px); transition: opacity 180ms ease, transform 310ms var(--ease-out); }
+.folder-atlas__front { position: absolute; right: 0; bottom: 0; left: 0; display: flex; height: 77%; flex-direction: column; justify-content: flex-end; gap: 7px; padding: 15px 18px; box-sizing: border-box; border: 1px solid rgba(196, 236, 255, .14); border-radius: 14px; background: linear-gradient(155deg, rgba(28, 86, 122, .97), var(--folder-front) 58%, #09263d); box-shadow: 0 -10px 25px rgba(0, 0, 0, .25), inset 0 1px 0 rgba(229, 248, 255, .22); color: #effaff; text-align: left; transform: rotateX(-16deg); transform-origin: center bottom; transition: transform 420ms var(--ease-out), filter 180ms ease; }
+.folder-atlas__number, .folder-atlas__hint { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 8px; letter-spacing: .12em; color: #aee7ff; }
+.folder-atlas__front strong { display: block; max-width: 92%; font-size: clamp(1.25rem, 2vw, 1.8rem); font-weight: 600; letter-spacing: -.055em; line-height: .95; }
+.folder-atlas__hint { color: rgba(230, 248, 255, .58); }
+.folder-atlas__cell[data-open="true"] .folder-atlas__front { transform: rotateX(-34deg); filter: brightness(1.08); }
+.folder-atlas__cell[data-open="true"] .folder-atlas__paper { opacity: 1; transform: translateY(0); }
+.folder-atlas__folder:focus-visible, .folder-atlas__document:focus-visible { outline: 2px solid #e4f7ff; outline-offset: 4px; }
+.folder-atlas__summary, .folder-atlas__notes { margin-top: 20px; border: 1px solid rgba(var(--mono-cyan-rgb), .18); background: rgba(119, 205, 255, .035); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.folder-atlas__summary { padding: 22px; border-radius: 18px; }
+.folder-atlas__summary > p:first-child, .folder-atlas__notes-head p { margin: 0; color: rgb(125 211 252); font-size: 10px; letter-spacing: .15em; }
+.folder-atlas__summary h3 { margin: 12px 0 0; color: #f0faff; font-size: clamp(1.55rem, 3vw, 2.2rem); font-weight: 500; letter-spacing: -.055em; line-height: 1.05; }
+.folder-atlas__summary-copy { max-width: 48rem; margin: 16px 0 0; color: rgba(225, 245, 255, .66); font-size: 1rem; line-height: 1.75; }
+.folder-atlas__summary a, .folder-atlas__notes > button { display: inline-flex; min-height: 44px; align-items: center; margin-top: 22px; border: 1px solid rgba(255, 255, 255, .55); border-radius: 999px; background: rgba(0, 0, 0, .1); padding: 10px 16px; color: #f5f9ff; font-size: 10px; letter-spacing: .13em; text-decoration: none; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: color 160ms var(--ease-out), border-color 160ms var(--ease-out), background-color 160ms var(--ease-out), transform 160ms var(--ease-out); }
+.folder-atlas__notes { padding: 22px; }
+.folder-atlas__notes-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding-bottom: 18px; border-bottom: 1px solid rgba(var(--mono-cyan-rgb), .15); }
+.folder-atlas__notes-head span { display: block; margin-top: 5px; color: rgba(225, 245, 255, .5); font-size: 14px; }
+.folder-atlas__notes-head small { color: rgba(225, 245, 255, .45); font-size: 10px; letter-spacing: .1em; white-space: nowrap; }
+.folder-atlas__notes textarea { display: block; width: 100%; margin-top: 20px; box-sizing: border-box; resize: vertical; border: 1px solid rgba(var(--mono-cyan-rgb), .16); border-radius: 12px; background: rgba(2, 9, 20, .8); padding: 14px; color: #e6f8ff; font: inherit; font-size: 1rem; line-height: 1.7; outline: none; }
+.folder-atlas__notes textarea:focus { border-color: rgba(var(--mono-cyan-rgb), .72); box-shadow: 0 0 24px rgba(var(--mono-cyan-rgb), .16); }
+.folder-atlas__notes > button { border: 0; background: #dff6ff; color: #06203a; cursor: pointer; font-weight: 700; }
+@media (hover: hover) and (pointer: fine) { .folder-atlas__folder:hover .folder-atlas__front { filter: brightness(1.12); transform: rotateX(-20deg) translateY(-2px); } .folder-atlas__cell[data-open="true"] .folder-atlas__folder:hover .folder-atlas__front { transform: rotateX(-34deg) translateY(-2px); } .folder-atlas__document:hover { transform: translate3d(calc(-50% + var(--folder-x)), calc(var(--folder-y) - 4px), 0) rotate(var(--folder-r)) scale(1.02) !important; } .folder-atlas__summary a:hover, .folder-atlas__notes > button:hover { border-color: #e4f7ff; background: #e4f7ff; color: #06203a; transform: translateY(-1px); } }
+@media (max-width: 640px) { .folder-atlas__board { grid-template-columns: 1fr; } .folder-atlas__cell { min-height: 310px; } .folder-atlas__folder { right: 9%; bottom: 25px; left: 9%; height: 144px; } .folder-atlas__front strong { font-size: 1.55rem; } .folder-atlas__document { width: min(78%, 290px); } .folder-atlas__notes-head { flex-direction: column; gap: 10px; } .folder-atlas__notes-head small { white-space: normal; } }
+@media (prefers-reduced-motion: reduce) { .folder-atlas__document, .folder-atlas__front, .folder-atlas__paper { transition-duration: .01ms !important; } }
+
+/* One system folder, four linked files — deliberately modelled after Folder Float. */
+.folder-atlas__stage { position: relative; min-height: clamp(390px, 48vw, 520px); overflow: hidden; border: 1px solid var(--folder-line); background: radial-gradient(ellipse at 50% 100%, rgba(var(--mono-cyan-rgb), .17), transparent 48%), linear-gradient(145deg, rgba(13, 35, 55, .92), rgba(2, 10, 19, .94)); box-shadow: 0 36px 90px rgba(0, 0, 0, .48); }
+.folder-atlas__stage::before { position: absolute; inset: 0; content: ""; pointer-events: none; opacity: .42; background-image: linear-gradient(rgba(var(--mono-cyan-rgb), .075) 1px, transparent 1px), linear-gradient(90deg, rgba(var(--mono-cyan-rgb), .075) 1px, transparent 1px); background-size: 32px 32px; mask-image: linear-gradient(to bottom, transparent, black 30%, transparent); }
+.folder-atlas__files { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+.folder-atlas__file { --folder-x: 0px; --folder-y: 0px; --folder-r: 0deg; position: absolute; top: 50%; left: 50%; z-index: 1; display: flex; width: fit-content; min-width: 84px; min-height: 34px; align-items: center; justify-content: center; padding: 7px 14px; border: 1px solid rgba(196, 236, 255, .16); border-radius: 999px; background: linear-gradient(155deg, rgba(28, 86, 122, .97), var(--folder-front) 58%, #09263d); color: #f2fbff; box-shadow: 0 12px 24px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(229, 248, 255, .18); cursor: pointer; opacity: 0; pointer-events: none; text-align: center; transform: translate3d(-50%, 90px, 0) scale(.9); transition: opacity 160ms ease, transform 420ms var(--ease-out); -webkit-tap-highlight-color: transparent; }
+.folder-atlas__file strong { font-size: 12px; font-weight: 600; line-height: 1; white-space: nowrap; }
+.folder-atlas__file:nth-child(1) { --folder-x: -96px; --folder-y: -78px; }
+.folder-atlas__file:nth-child(2) { --folder-x: 96px; --folder-y: -80px; }
+.folder-atlas__file:nth-child(3) { --folder-x: -72px; --folder-y: -26px; }
+.folder-atlas__file:nth-child(4) { --folder-x: 76px; --folder-y: -28px; }
+.folder-atlas__stage[data-open="true"] .folder-atlas__file { opacity: 1; pointer-events: auto; transform: translate3d(calc(-50% + var(--folder-x)), calc(-50% + var(--folder-y)), 0) rotate(var(--folder-r)) scale(1); transition-delay: calc(var(--folder-index) * 46ms); }
+.folder-atlas__file[data-picked="true"] { transform: translate3d(calc(-50% + var(--folder-x)), calc(-50% + var(--folder-y) - 2px), 0) rotate(var(--folder-r)) scale(.97) !important; }
+.folder-atlas__stage .folder-atlas__folder { position: absolute; bottom: 36px; left: 50%; z-index: 3; width: min(200px, 62vw); height: 148px; transform: translateX(-50%); }
+.folder-atlas__stage .folder-atlas__back { border-radius: 16px; background: linear-gradient(160deg, #17496c, var(--folder-back) 64%); }
+.folder-atlas__stage .folder-atlas__back::before { top: -16px; width: 38%; height: 34px; border-radius: 16px 16px 0 0; }
+.folder-atlas__stage .folder-atlas__paper { opacity: 0; transform: translateY(13px); }
+.folder-atlas__stage .folder-atlas__front { height: 76%; padding: 20px 24px; border-radius: 16px; background: linear-gradient(155deg, rgba(28, 86, 122, .97), var(--folder-front) 58%, #09263d); }
+.folder-atlas__stage .folder-atlas__front strong { max-width: 90%; font-size: clamp(1.6rem, 4.4vw, 3.5rem); letter-spacing: -.06em; }
+.folder-atlas__stage[data-open="true"] .folder-atlas__front { transform: rotateX(-34deg); filter: brightness(1.08); }
+.folder-atlas__stage[data-open="true"] .folder-atlas__paper { opacity: 1; transform: translateY(0); }
+@media (hover: hover) and (pointer: fine) { .folder-atlas__stage .folder-atlas__folder:hover .folder-atlas__front { transform: rotateX(-20deg) translateY(-2px); } .folder-atlas__stage[data-open="true"] .folder-atlas__folder:hover .folder-atlas__front { transform: rotateX(-34deg) translateY(-2px); } .folder-atlas__file:hover { transform: translate3d(calc(-50% + var(--folder-x)), calc(-50% + var(--folder-y) - 4px), 0) rotate(var(--folder-r)) scale(1.02) !important; } }
+@media (max-width: 640px) { .folder-atlas__stage { min-height: 440px; } .folder-atlas__stage .folder-atlas__folder { bottom: 26px; width: 200px; height: 148px; } .folder-atlas__stage .folder-atlas__front { padding: 16px 18px; } .folder-atlas__stage .folder-atlas__front strong { font-size: 1.65rem; } .folder-atlas__file { min-width: 80px; min-height: 32px; padding: 6px 12px; } .folder-atlas__file strong { font-size: 11px; } .folder-atlas__file:nth-child(1) { --folder-x: -65px; --folder-y: -80px; } .folder-atlas__file:nth-child(2) { --folder-x: 65px; --folder-y: -82px; } .folder-atlas__file:nth-child(3) { --folder-x: -52px; --folder-y: -28px; } .folder-atlas__file:nth-child(4) { --folder-x: 54px; --folder-y: -30px; } }
+
+/* Compact reference proportion and deliberately irregular paper angles. */
+.folder-atlas__stage[data-open] .folder-atlas__file { opacity: 1; pointer-events: auto; transform: translate3d(calc(-50% + var(--folder-x)), calc(-50% + var(--folder-y)), 0) rotate(calc(var(--folder-r) + var(--file-tilt))) scale(1); }
+.folder-atlas__file[data-picked] { transform: translate3d(calc(-50% + var(--folder-x)), calc(-50% + var(--folder-y) - 2px), 0) rotate(calc(var(--folder-r) + var(--file-tilt))) scale(.97) !important; }
+.folder-atlas__stage .folder-atlas__front strong { display: block; max-width: 100%; overflow: hidden; font-size: 13px; letter-spacing: -.025em; line-height: 1; text-overflow: ellipsis; white-space: nowrap; }
+.folder-atlas__stage[data-open] .folder-atlas__front { transform: rotateX(-34deg); filter: brightness(1.08); }
+.folder-atlas__stage[data-open] .folder-atlas__paper { opacity: 1; transform: translateY(0); }
+@media (hover: hover) and (pointer: fine) { .folder-atlas__file:hover { transform: translate3d(calc(-50% + var(--folder-x)), calc(-50% + var(--folder-y) - 4px), 0) rotate(calc(var(--folder-r) + var(--file-tilt))) scale(1.02) !important; } }
+@media (max-width: 640px) { .folder-atlas__stage .folder-atlas__front strong { font-size: 12px; } }
+
+/* Keep the Folder Float compact: only the folder and its files are visible. */
+.folder-atlas__stage { width: min(100%, 620px); min-height: 292px; margin-inline: auto; border-radius: 18px; }
+.folder-atlas__stage .folder-atlas__paper { display: none; }
+.folder-atlas__stage .folder-atlas__folder { bottom: 24px; }
+@media (max-width: 640px) { .folder-atlas__stage { min-height: 292px; } .folder-atlas__stage .folder-atlas__folder { bottom: 22px; } }
+
+@media (hover: hover) and (pointer: fine) { .folder-atlas__summary a:hover { border-color: rgba(255, 255, 255, .8); background: rgba(255, 255, 255, .15); color: #f5f9ff; transform: translateY(-1px); } }
