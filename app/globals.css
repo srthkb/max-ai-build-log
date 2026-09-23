@@ -187,6 +187,14 @@ body { margin: 0; min-width: 320px; overflow-x: hidden; background: var(--bg-dar
 @media (max-width: 640px) { .folder-atlas__board { grid-template-columns: 1fr; } .folder-atlas__cell { min-height: 310px; } .folder-atlas__folder { right: 9%; bottom: 25px; left: 9%; height: 144px; } .folder-atlas__front strong { font-size: 1.55rem; } .folder-atlas__document { width: min(78%, 290px); } .folder-atlas__notes-head { flex-direction: column; gap: 10px; } .folder-atlas__notes-head small { white-space: normal; } }
 @media (prefers-reduced-motion: reduce) { .folder-atlas__document, .folder-atlas__front, .folder-atlas__paper { transition-duration: .01ms !important; } }
 
+/* Personal AI architecture diagram — neutral, editorial geometry. */
+.personal-ai-diagram { width: 100%; max-width: 34rem; margin: 0; color: rgba(240, 249, 255, .92); }
+.personal-ai-diagram svg { display: block; width: 100%; height: auto; overflow: visible; }
+.personal-ai-diagram__lines { stroke-width: 1.25; color: rgba(224, 242, 254, .72); }
+.personal-ai-diagram__device { fill: currentColor; font-family: inherit; font-size: 13px; font-weight: 500; letter-spacing: .16em; }
+.personal-ai-diagram__role { fill: currentColor; font-family: inherit; font-size: 20px; font-weight: 600; letter-spacing: .035em; }
+@media (max-width: 640px) { .personal-ai-diagram { max-width: 29rem; margin-inline: auto; } .personal-ai-diagram__device { font-size: 12px; } .personal-ai-diagram__role { font-size: 18px; } }
+
 /* One system folder, four linked files — deliberately modelled after Folder Float. */
 .folder-atlas__stage { position: relative; min-height: clamp(390px, 48vw, 520px); overflow: hidden; border: 1px solid var(--folder-line); background: radial-gradient(ellipse at 50% 100%, rgba(var(--mono-cyan-rgb), .17), transparent 48%), linear-gradient(145deg, rgba(13, 35, 55, .92), rgba(2, 10, 19, .94)); box-shadow: 0 36px 90px rgba(0, 0, 0, .48); }
 .folder-atlas__stage::before { position: absolute; inset: 0; content: ""; pointer-events: none; opacity: .42; background-image: linear-gradient(rgba(var(--mono-cyan-rgb), .075) 1px, transparent 1px), linear-gradient(90deg, rgba(var(--mono-cyan-rgb), .075) 1px, transparent 1px); background-size: 32px 32px; mask-image: linear-gradient(to bottom, transparent, black 30%, transparent); }
